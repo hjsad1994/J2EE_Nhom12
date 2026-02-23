@@ -109,9 +109,9 @@ This means:
 Use `@/` to import from `src/`:
 
 ```typescript
-import apiClient from "@/api/client";
-import { useAuth } from "@/features/auth";
-import { Button } from "@/components/ui/Button";
+import apiClient from '@/api/client';
+import { useAuth } from '@/features/auth';
+import { Button } from '@/components/ui/Button';
 ```
 
 ## State Management

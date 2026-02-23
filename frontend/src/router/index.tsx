@@ -1,5 +1,5 @@
-import { createBrowserRouter } from "react-router";
-import App from "@/App";
+import { createBrowserRouter } from 'react-router';
+import App from '@/App';
 
 /**
  * Application router configuration.
@@ -13,14 +13,14 @@ import App from "@/App";
  *   }
  */
 export const router = createBrowserRouter([
-	{
-		path: "/",
-		Component: App,
-		children: [
-			{
-				index: true,
-				lazy: () => import("@/pages/Home"),
-			},
-		],
-	},
+  {
+    path: '/',
+    Component: App,
+    children: [
+      {
+        index: true,
+        lazy: () => import('@/pages/Home'),
+      },
+    ],
+  },
 ]);
