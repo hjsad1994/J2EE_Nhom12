@@ -11,6 +11,7 @@ const isLoggedIn = false;
 const navLinks = [
   { label: 'Trang chủ', href: '/' },
   { label: 'Sản phẩm', href: '/products' },
+  { label: 'Về chúng tôi', href: '/about' },
 ];
 
 export default function Navbar() {

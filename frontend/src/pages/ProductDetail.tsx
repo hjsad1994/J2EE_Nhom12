@@ -73,7 +73,7 @@ export function Component() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
           {/* Image */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             className="relative flex items-center justify-center rounded-3xl bg-surface-alt p-12"
@@ -97,7 +97,7 @@ export function Component() {
 
           {/* Info */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >

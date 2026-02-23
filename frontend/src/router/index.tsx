@@ -23,6 +23,10 @@ export const router = createBrowserRouter([
         lazy: () => import('@/pages/Auth'),
       },
       {
+        path: 'about',
+        lazy: () => import('@/pages/About'),
+      },
+      {
         path: 'wishlist',
         lazy: () => import('@/pages/Wishlist'),
       },
