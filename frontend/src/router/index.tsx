@@ -1,17 +1,6 @@
 import { createBrowserRouter } from 'react-router';
 import App from '@/App';
 
-/**
- * Application router configuration.
- *
- * Add routes here as features are implemented:
- *
- * Example:
- *   {
- *     path: '/dashboard',
- *     lazy: () => import('@/pages/Dashboard'),
- *   }
- */
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -20,6 +9,14 @@ export const router = createBrowserRouter([
       {
         index: true,
         lazy: () => import('@/pages/Home'),
+      },
+      {
+        path: 'products',
+        lazy: () => import('@/pages/Products'),
+      },
+      {
+        path: 'products/:id',
+        lazy: () => import('@/pages/ProductDetail'),
       },
     ],
   },

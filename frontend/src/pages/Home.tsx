@@ -1,8 +1,13 @@
+import FeaturedProducts from '@/components/home/FeaturedProducts';
+import Features from '@/components/home/Features';
+import Hero from '@/components/home/Hero';
+
 export function Component() {
   return (
-    <div>
-      <h1>Nhom12 App</h1>
-      <p>Frontend is running. Start building features!</p>
-    </div>
+    <>
+      <Hero />
+      <FeaturedProducts />
+      <Features />
+    </>
   );
 }
