@@ -2,6 +2,7 @@ import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router';
 
+import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import type { Product } from '@/types/product';
 
@@ -13,6 +14,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const toggleWishlist = useWishlistStore((s) => s.toggle);
   const isWishlisted = useWishlistStore((s) => s.has(product.id));
+  const addToCart = useCartStore((s) => s.addItem);
 
   const discount = product.originalPrice
     ? Math.round((1 - product.price / product.originalPrice) * 100)
@@ -52,6 +54,12 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             toggleWishlist(product);
           }}
           className="absolute top-3 right-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-text-muted shadow-sm transition-all duration-200 hover:text-brand-accent hover:shadow-md"
+          aria-label={
+            isWishlisted
+              ? `Bỏ yêu thích ${product.name}`
+              : `Yêu thích ${product.name}`
+          }
+          aria-pressed={isWishlisted}
         >
           <Heart
             className={`h-4 w-4 ${isWishlisted ? 'fill-brand-accent text-brand-accent' : ''}`}
@@ -116,9 +124,11 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
               whileTap={{ scale: 0.95 }}
               onClick={(e) => {
                 e.preventDefault();
-                // TODO: add to cart
+                e.stopPropagation();
+                addToCart(product);
               }}
               className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-brand text-white transition-shadow hover:shadow-lg"
+              aria-label={`Thêm ${product.name} vào giỏ hàng`}
             >
               <ShoppingCart className="h-4 w-4" />
             </motion.button>
