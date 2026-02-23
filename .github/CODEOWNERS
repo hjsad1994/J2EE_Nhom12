@@ -1,0 +1,8 @@
+# Default code owner for all files
+* @hjsad1994
+
+# Backend-specific ownership
+/nhom12/ @hjsad1994
+
+# Frontend-specific ownership
+/frontend/ @hjsad1994

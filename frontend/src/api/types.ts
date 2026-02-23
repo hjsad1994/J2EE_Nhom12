@@ -4,15 +4,15 @@
  */
 
 export interface ApiResponse<T> {
-	data: T;
-	message?: string;
-	status: number;
+  data: T;
+  message?: string;
+  status: number;
 }
 
 export interface ApiError {
-	message: string;
-	status: number;
-	errors?: Record<string, string[]>;
+  message: string;
+  status: number;
+  errors?: Record<string, string[]>;
 }
 
 /**
@@ -20,9 +20,9 @@ export interface ApiError {
  * Fields: content, number (0-indexed), size, totalPages, totalElements.
  */
 export interface PaginatedResponse<T> {
-	content: T[];
-	number: number;
-	size: number;
-	totalPages: number;
-	totalElements: number;
+  content: T[];
+  number: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
 }
