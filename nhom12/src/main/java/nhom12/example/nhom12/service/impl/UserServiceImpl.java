@@ -18,34 +18,36 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
+  private final UserRepository userRepository;
+  private final UserMapper userMapper;
+  private final PasswordEncoder passwordEncoder;
 
-    @Override
-    public UserResponse createUser(CreateUserRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new DuplicateResourceException("User", "username", request.getUsername());
-        }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateResourceException("User", "email", request.getEmail());
-        }
-
-        User user = userMapper.toEntity(request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        User saved = userRepository.save(user);
-        return userMapper.toResponse(saved);
+  @Override
+  public UserResponse createUser(CreateUserRequest request) {
+    if (userRepository.existsByUsername(request.getUsername())) {
+      throw new DuplicateResourceException("User", "username", request.getUsername());
+    }
+    if (userRepository.existsByEmail(request.getEmail())) {
+      throw new DuplicateResourceException("User", "email", request.getEmail());
     }
 
-    @Override
-    public UserResponse getUserById(String id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
-        return userMapper.toResponse(user);
-    }
+    User user = userMapper.toEntity(request);
+    user.setPassword(passwordEncoder.encode(request.getPassword()));
+    User saved = userRepository.save(user);
+    return userMapper.toResponse(saved);
+  }
 
-    @Override
-    public Page<UserResponse> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(userMapper::toResponse);
-    }
+  @Override
+  public UserResponse getUserById(String id) {
+    User user =
+        userRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+    return userMapper.toResponse(user);
+  }
+
+  @Override
+  public Page<UserResponse> getAllUsers(Pageable pageable) {
+    return userRepository.findAll(pageable).map(userMapper::toResponse);
+  }
 }

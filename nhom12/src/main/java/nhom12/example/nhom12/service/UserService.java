@@ -7,9 +7,9 @@ import org.springframework.data.domain.Pageable;
 
 public interface UserService {
 
-    UserResponse createUser(CreateUserRequest request);
+  UserResponse createUser(CreateUserRequest request);
 
-    UserResponse getUserById(String id);
+  UserResponse getUserById(String id);
 
-    Page<UserResponse> getAllUsers(Pageable pageable);
+  Page<UserResponse> getAllUsers(Pageable pageable);
 }

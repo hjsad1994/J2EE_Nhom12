@@ -13,23 +13,15 @@ import lombok.Setter;
 @Builder
 public class ApiResponse<T> {
 
-    private T data;
-    private String message;
-    private int status;
+  private T data;
+  private String message;
+  private int status;
 
-    public static <T> ApiResponse<T> success(T data, String message) {
-        return ApiResponse.<T>builder()
-                .data(data)
-                .message(message)
-                .status(200)
-                .build();
-    }
+  public static <T> ApiResponse<T> success(T data, String message) {
+    return ApiResponse.<T>builder().data(data).message(message).status(200).build();
+  }
 
-    public static <T> ApiResponse<T> created(T data, String message) {
-        return ApiResponse.<T>builder()
-                .data(data)
-                .message(message)
-                .status(201)
-                .build();
-    }
+  public static <T> ApiResponse<T> created(T data, String message) {
+    return ApiResponse.<T>builder().data(data).message(message).status(201).build();
+  }
 }

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import nhom12.example.nhom12.model.enums.Role;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -14,17 +15,16 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class User extends BaseDocument {
 
-    @Indexed(unique = true)
-    private String username;
+  @Indexed(unique = true)
+  private String username;
 
-    @Indexed(unique = true)
-    private String email;
+  @Indexed(unique = true)
+  private String email;
 
-    private String password;
+  private String password;
 
-    @Builder.Default
-    private Role role = Role.USER;
+  @Builder.Default private Role role = Role.USER;
 }
