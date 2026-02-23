@@ -1,7 +1,12 @@
-import { Menu, ShoppingCart, Smartphone, X } from 'lucide-react';
+import { Heart, Menu, ShoppingCart, Smartphone, User, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { Link } from 'react-router';
+
+import { useWishlistStore } from '@/store/useWishlistStore';
+
+// TODO: Replace with real auth state from Zustand store
+const isLoggedIn = false;
 
 const navLinks = [
   { label: 'Trang chủ', href: '/' },
@@ -10,6 +15,7 @@ const navLinks = [
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const wishlistCount = useWishlistStore((s) => s.items.length);
 
   return (
     <motion.header
@@ -45,6 +51,28 @@ export default function Navbar() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+          {/* Wishlist */}
+          <Link
+            to="/wishlist"
+            className="relative rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
+            title="Yêu thích"
+          >
+            <Heart className="h-5 w-5" />
+            <AnimatePresence>
+              {wishlistCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-accent text-[10px] font-bold text-white ring-2 ring-surface"
+                >
+                  {wishlistCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Link>
+
+          {/* Cart */}
           <button
             type="button"
             className="relative cursor-pointer rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
@@ -54,6 +82,24 @@ export default function Navbar() {
               3
             </span>
           </button>
+
+          {/* Profile / Login */}
+          {isLoggedIn ? (
+            <Link
+              to="/profile"
+              className="rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
+              title="Tài khoản"
+            >
+              <User className="h-5 w-5" />
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="hidden rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-accent no-underline md:block"
+            >
+              Đăng nhập
+            </Link>
+          )}
 
           {/* Mobile toggle */}
           <button
@@ -91,6 +137,17 @@ export default function Navbar() {
                   </Link>
                 </li>
               ))}
+              {!isLoggedIn && (
+                <li>
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="block rounded-lg px-4 py-2.5 text-sm font-medium text-brand transition-colors hover:bg-surface-alt no-underline"
+                  >
+                    Đăng nhập
+                  </Link>
+                </li>
+              )}
             </ul>
           </motion.div>
         )}

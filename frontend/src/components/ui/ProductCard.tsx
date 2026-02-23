@@ -1,7 +1,8 @@
-import { ShoppingCart, Star } from 'lucide-react';
+import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router';
 
+import { useWishlistStore } from '@/store/useWishlistStore';
 import type { Product } from '@/types/product';
 
 interface ProductCardProps {
@@ -10,6 +11,9 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
+  const toggleWishlist = useWishlistStore((s) => s.toggle);
+  const isWishlisted = useWishlistStore((s) => s.has(product.id));
+
   const discount = product.originalPrice
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null;
@@ -25,19 +29,34 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
         to={`/products/${product.id}`}
         className="group relative block overflow-hidden rounded-2xl card card-hover no-underline"
       >
-        {/* Badge */}
-        {product.badge && (
-          <span className="absolute top-3 left-3 z-10 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white">
-            {product.badge}
-          </span>
-        )}
+        {/* Badges — top-left, stacked */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
+          {product.badge && (
+            <span className="rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white shadow-sm">
+              {product.badge}
+            </span>
+          )}
+          {discount && (
+            <span className="rounded-full bg-red-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
+              -{discount}%
+            </span>
+          )}
+        </div>
 
-        {/* Discount */}
-        {discount && (
-          <span className="absolute top-3 right-3 z-10 rounded-full bg-red-500 px-2.5 py-1 text-xs font-bold text-white">
-            -{discount}%
-          </span>
-        )}
+        {/* Wishlist toggle — top-right */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={(e) => {
+            e.preventDefault();
+            toggleWishlist(product);
+          }}
+          className="absolute top-3 right-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-text-muted shadow-sm transition-all duration-200 hover:text-brand-accent hover:shadow-md"
+        >
+          <Heart
+            className={`h-4 w-4 ${isWishlisted ? 'fill-brand-accent text-brand-accent' : ''}`}
+          />
+        </motion.button>
 
         {/* Image */}
         <div className="relative flex items-center justify-center overflow-hidden bg-surface-alt p-6 pt-8">
@@ -67,7 +86,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           <div className="mt-2 flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
-                key={i}
+                key={`star-${product.id}-${i}`}
                 className={`h-3.5 w-3.5 ${
                   i < Math.floor(product.rating)
                     ? 'fill-amber-400 text-amber-400'

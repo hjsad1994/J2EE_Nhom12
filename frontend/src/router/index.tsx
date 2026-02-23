@@ -18,6 +18,14 @@ export const router = createBrowserRouter([
         path: 'products/:id',
         lazy: () => import('@/pages/ProductDetail'),
       },
+      {
+        path: 'login',
+        lazy: () => import('@/pages/Auth'),
+      },
+      {
+        path: 'wishlist',
+        lazy: () => import('@/pages/Wishlist'),
+      },
     ],
   },
 ]);
