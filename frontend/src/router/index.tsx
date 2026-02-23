@@ -30,6 +30,10 @@ export const router = createBrowserRouter([
         path: 'wishlist',
         lazy: () => import('@/pages/Wishlist'),
       },
+      {
+        path: 'cart',
+        lazy: () => import('@/pages/Cart'),
+      },
     ],
   },
 ]);

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 
+import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
 
 // TODO: Replace with real auth state from Zustand store
@@ -17,6 +18,7 @@ const navLinks = [
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const wishlistCount = useWishlistStore((s) => s.items.length);
+  const cartCount = useCartStore((s) => s.totalItems());
 
   return (
     <motion.header
@@ -56,7 +58,7 @@ export default function Navbar() {
           <Link
             to="/wishlist"
             className="relative rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
-            title="Yêu thích"
+            aria-label={`Yêu thích${wishlistCount > 0 ? `, ${wishlistCount} sản phẩm` : ''}`}
           >
             <Heart className="h-5 w-5" />
             <AnimatePresence>
@@ -74,15 +76,25 @@ export default function Navbar() {
           </Link>
 
           {/* Cart */}
-          <button
-            type="button"
-            className="relative cursor-pointer rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
+          <Link
+            to="/cart"
+            className="relative rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
+            aria-label={`Giỏ hàng${cartCount > 0 ? `, ${cartCount} sản phẩm` : ''}`}
           >
             <ShoppingCart className="h-5 w-5" />
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white">
-              3
-            </span>
-          </button>
+            <AnimatePresence>
+              {cartCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white ring-2 ring-surface"
+                >
+                  {cartCount > 99 ? '99+' : cartCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Link>
 
           {/* Profile / Login */}
           {isLoggedIn ? (
@@ -107,6 +119,8 @@ export default function Navbar() {
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
             className="cursor-pointer rounded-lg p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand md:hidden"
+            aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu'}
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? (
               <X className="h-5 w-5" />
