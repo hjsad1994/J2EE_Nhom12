@@ -1,73 +1,135 @@
-# React + TypeScript + Vite
+# Nhom12 Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite + TypeScript frontend for the Nhom12 application.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+# Install dependencies
+npm install
 
-## React Compiler
+# Start dev server (port 5173)
+npm run dev
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+# Type check
+npx tsc --noEmit
 
-## Expanding the ESLint configuration
+# Lint
+npm run lint
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Run tests
+npm test
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build for production
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Folder Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── api/                  # API integration layer
+│   ├── client.ts         # Axios instance with interceptors
+│   ├── endpoints.ts      # API endpoint constants
+│   └── types.ts          # Shared request/response types
+│
+├── features/             # Feature-based modules
+│   └── example/          # Template — copy for new features
+│       ├── components/   # Feature-specific UI components
+│       ├── hooks/        # Feature-specific custom hooks
+│       ├── services/     # API service functions
+│       ├── stores/       # Zustand stores (feature-local state)
+│       ├── types/        # Feature-specific TypeScript types
+│       └── index.ts      # Public barrel export
+│
+├── components/           # Shared/reusable UI components
+│   ├── ui/               # Design system primitives
+│   └── layout/           # Layout components (Header, Sidebar, etc.)
+│
+├── hooks/                # Shared custom hooks
+├── pages/                # Route-level page components
+│
+├── router/               # Routing configuration
+│   ├── index.tsx         # createBrowserRouter definition
+│   └── guards/           # Route guards (auth, roles, etc.)
+│
+├── stores/               # Global Zustand stores
+├── types/                # Shared TypeScript types
+├── utils/                # Pure utility functions
+├── lib/                  # Third-party library wrappers
+│   └── queryClient.ts    # TanStack Query client setup
+│
+├── assets/               # Static assets
+│   ├── images/
+│   └── styles/
+│       └── globals.css
+│
+├── main.tsx              # App bootstrap (providers + router)
+├── App.tsx               # Root layout component
+└── vite-env.d.ts         # Vite/TypeScript env types
+```
+
+## Creating a New Feature
+
+1. Copy `src/features/example/` to `src/features/<your-feature>/`
+2. Add components, hooks, services, stores, and types
+3. Export public API from `index.ts`
+4. Add route in `src/router/index.tsx`
+5. Import from `@/features/<your-feature>`
+
+## Environment Variables
+
+All environment variables must be prefixed with `VITE_` to be exposed to the client.
+
+| Variable            | Description                          | Default    |
+| ------------------- | ------------------------------------ | ---------- |
+| `VITE_APP_NAME`     | Application name                     | Nhom12 App |
+| `VITE_APP_ENV`      | Environment (development/production) | —          |
+| `VITE_API_BASE_URL` | API base URL                         | /api       |
+
+Files:
+
+- `.env` — Default values (committed)
+- `.env.development` — Dev overrides
+- `.env.production` — Prod overrides
+- `.env.local` — Local overrides (NOT committed, copy from `.env.local.example`)
+
+## API Proxy
+
+In development, requests to `/api/*` are proxied to `http://localhost:8080` (Spring Boot backend).
+
+This means:
+
+- No CORS issues in development
+- Use relative paths: `fetch('/api/users')` not `fetch('http://localhost:8080/api/users')`
+- Spring Boot must be running on port 8080 for API calls to work
+
+## Path Aliases
+
+Use `@/` to import from `src/`:
+
+```typescript
+import apiClient from "@/api/client";
+import { useAuth } from "@/features/auth";
+import { Button } from "@/components/ui/Button";
+```
+
+## State Management
+
+- **Server state** (API data): TanStack Query — caching, refetching, mutations
+- **Client state** (UI state): Zustand — minimal boilerplate, no Redux ceremony
+
+## Tech Stack
+
+| Tool              | Purpose                 |
+| ----------------- | ----------------------- |
+| React 19          | UI framework            |
+| Vite 6            | Build tool + dev server |
+| TypeScript        | Type safety             |
+| SWC               | Fast compilation        |
+| React Router v7   | Client-side routing     |
+| TanStack Query v5 | Server state management |
+| Zustand v5        | Client state management |
+| Axios             | HTTP client             |
+| Vitest            | Unit testing            |
+| ESLint            | Code linting            |
