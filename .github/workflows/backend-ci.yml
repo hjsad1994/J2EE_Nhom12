@@ -3,8 +3,13 @@ name: Backend CI
 on:
   push:
     branches: [main]
+    paths: ["nhom12/**", ".github/workflows/backend-ci.yml"]
   pull_request:
     branches: [main]
+    paths: ["nhom12/**", ".github/workflows/backend-ci.yml"]
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -37,9 +42,6 @@ jobs:
         uses: axel-op/googlejavaformat-action@v4
         with:
           args: "--set-exit-if-changed --dry-run"
-
-      - name: Compile
-        run: ./mvnw -B --no-transfer-progress compile
 
       - name: Run tests
         run: ./mvnw -B --no-transfer-progress test

@@ -1,11 +1,3 @@
----
-name: Pull Request
-about: Submit changes for review
-title: ""
-labels: ""
-assignees: ""
----
-
 ## Description
 
 <!-- Describe your changes in detail -->
