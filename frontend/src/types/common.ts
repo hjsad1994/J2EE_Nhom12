@@ -8,8 +8,8 @@ export interface PaginationParams {
   size: number;
 }
 
-/** Generic ID type — adjust to match your backend (number | string) */
-export type EntityId = number;
+/** Generic ID type — MongoDB uses string ObjectIds */
+export type EntityId = string;
 
 /** Base entity with common fields */
 export interface BaseEntity {
