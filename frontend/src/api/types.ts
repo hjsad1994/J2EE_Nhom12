@@ -15,10 +15,14 @@ export interface ApiError {
 	errors?: Record<string, string[]>;
 }
 
+/**
+ * Matches Spring Boot's Page<T> serialization format.
+ * Fields: content, number (0-indexed), size, totalPages, totalElements.
+ */
 export interface PaginatedResponse<T> {
-	data: T[];
-	page: number;
-	pageSize: number;
+	content: T[];
+	number: number;
+	size: number;
 	totalPages: number;
-	totalItems: number;
+	totalElements: number;
 }

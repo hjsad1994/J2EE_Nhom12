@@ -124,7 +124,7 @@ import { Button } from "@/components/ui/Button";
 | Tool              | Purpose                 |
 | ----------------- | ----------------------- |
 | React 19          | UI framework            |
-| Vite 6            | Build tool + dev server |
+| Vite 7            | Build tool + dev server |
 | TypeScript        | Type safety             |
 | SWC               | Fast compilation        |
 | React Router v7   | Client-side routing     |
