@@ -1,7 +1,7 @@
 import { Check, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useId } from 'react';
-import { Link } from 'react-router';
+import { Link, Navigate, useLocation } from 'react-router';
 
 export const Component = CheckoutSuccess;
 
@@ -16,6 +16,15 @@ function generateOrderId(seed: string): string {
 
 function CheckoutSuccess() {
   const id = useId();
+  const location = useLocation();
+  const fromCheckout = (location.state as { fromCheckout?: boolean })
+    ?.fromCheckout;
+
+  // Prevent direct URL access — only allow navigation from checkout flow
+  if (!fromCheckout) {
+    return <Navigate to="/products" replace />;
+  }
+
   const orderId = generateOrderId(id);
 
   return (
