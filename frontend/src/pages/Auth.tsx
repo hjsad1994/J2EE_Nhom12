@@ -207,7 +207,6 @@ export function Component() {
               className="btn-outline flex w-full cursor-pointer items-center justify-center gap-2 transition-all hover:bg-surface-alt"
               onClick={() => {
                 // TODO: Implement Google Sign-In
-                console.log('Google login clicked');
               }}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">

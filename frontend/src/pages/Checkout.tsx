@@ -47,16 +47,18 @@ function Checkout() {
   const shippingFee = totalPrice >= 500000 ? 0 : 30000;
   const total = totalPrice + shippingFee;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate API call
+    // TODO: Send order data to backend API (Phase 3)
+    // Form inputs have name attributes — use `new FormData(e.currentTarget)`
+    // to collect: email, name, phone, address, city, district, ward, payment, note
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    clear();
     setLoading(false);
-    navigate('/checkout/success');
+    navigate('/checkout/success', { state: { fromCheckout: true } });
+    clear();
   };
 
   return (
@@ -105,6 +107,7 @@ function Checkout() {
                   <input
                     type="email"
                     id="email"
+                    name="email"
                     required
                     placeholder="nguyenvan@example.com"
                     className={inputClass}
@@ -120,6 +123,7 @@ function Checkout() {
                   <input
                     type="text"
                     id="name"
+                    name="name"
                     required
                     placeholder="Nguyễn Văn A"
                     className={inputClass}
@@ -135,6 +139,7 @@ function Checkout() {
                   <input
                     type="tel"
                     id="phone"
+                    name="phone"
                     required
                     placeholder="0912 345 678"
                     className={inputClass}
@@ -150,31 +155,71 @@ function Checkout() {
                 Địa chỉ giao hàng
               </h2>
               <div className="space-y-4">
-                <input
-                  type="text"
-                  required
-                  placeholder="Địa chỉ (Số nhà, Tên đường)"
-                  className={inputClass}
-                />
+                <div>
+                  <label
+                    htmlFor="address"
+                    className="mb-2 block text-sm font-medium text-text-primary"
+                  >
+                    Địa chỉ
+                  </label>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    required
+                    placeholder="Số nhà, Tên đường"
+                    className={inputClass}
+                  />
+                </div>
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Tỉnh / Thành phố"
-                    className={inputClass}
-                  />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Quận / Huyện"
-                    className={inputClass}
-                  />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Phường / Xã"
-                    className={inputClass}
-                  />
+                  <div>
+                    <label
+                      htmlFor="city"
+                      className="mb-2 block text-sm font-medium text-text-primary"
+                    >
+                      Tỉnh / Thành phố
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      required
+                      placeholder="Tỉnh / Thành phố"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="district"
+                      className="mb-2 block text-sm font-medium text-text-primary"
+                    >
+                      Quận / Huyện
+                    </label>
+                    <input
+                      type="text"
+                      id="district"
+                      name="district"
+                      required
+                      placeholder="Quận / Huyện"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="ward"
+                      className="mb-2 block text-sm font-medium text-text-primary"
+                    >
+                      Phường / Xã
+                    </label>
+                    <input
+                      type="text"
+                      id="ward"
+                      name="ward"
+                      required
+                      placeholder="Phường / Xã"
+                      className={inputClass}
+                    />
+                  </div>
                 </div>
               </div>
             </section>
@@ -257,6 +302,7 @@ function Checkout() {
               </label>
               <textarea
                 id="note"
+                name="note"
                 rows={3}
                 placeholder="Ghi chú thêm về đơn hàng, ví dụ: giao vào buổi sáng..."
                 className={`${inputClass} resize-none`}
