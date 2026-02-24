@@ -34,6 +34,14 @@ export const router = createBrowserRouter([
         path: 'cart',
         lazy: () => import('@/pages/Cart'),
       },
+      {
+        path: 'checkout',
+        lazy: () => import('@/pages/Checkout'),
+      },
+      {
+        path: 'checkout/success',
+        lazy: () => import('@/pages/CheckoutSuccess'),
+      },
     ],
   },
 ]);
