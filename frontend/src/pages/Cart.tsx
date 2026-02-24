@@ -239,16 +239,13 @@ function Cart() {
                 </span>
               </div>
 
-              {/* TODO: Wire to checkout page when available */}
-              <button
-                type="button"
-                disabled
-                className="group relative mt-6 flex w-full cursor-not-allowed items-center justify-center gap-3 overflow-hidden rounded-xl bg-brand py-4 text-center font-display text-sm font-bold tracking-wide text-white opacity-60 shadow-lg"
-                title="Tính năng thanh toán sắp ra mắt"
+              <Link
+                to="/checkout"
+                className="group relative mt-6 flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl bg-brand py-4 text-center font-display text-sm font-bold tracking-wide text-white no-underline shadow-lg transition-all hover:shadow-xl hover:-translate-y-0.5"
               >
                 <span>Tiến hành thanh toán</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
 
               <Link
                 to="/products"
