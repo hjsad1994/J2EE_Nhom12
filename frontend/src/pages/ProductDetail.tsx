@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Check,
+  Heart,
   RotateCcw,
   Shield,
   ShoppingCart,
@@ -11,10 +12,13 @@ import { motion } from 'motion/react';
 import { Link, useParams } from 'react-router';
 import ProductCard from '@/components/ui/ProductCard';
 import { allProducts } from '@/data/products';
+import { useWishlistStore } from '@/store/useWishlistStore';
 
 export function Component() {
   const { id } = useParams<{ id: string }>();
   const product = allProducts.find((p) => p.id === id);
+  const toggleWishlist = useWishlistStore((s) => s.toggle);
+  const isWishlisted = useWishlistStore((s) => s.has(product?.id ?? ''));
 
   if (!product) {
     return (
@@ -214,6 +218,23 @@ export function Component() {
                 className="btn-outline px-6 py-4"
               >
                 Mua ngay
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => product && toggleWishlist(product)}
+                className={`flex aspect-square h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 transition-colors ${
+                  isWishlisted
+                    ? 'border-red-200 bg-red-50 text-red-500 hover:border-red-300 hover:bg-red-100'
+                    : 'border-border bg-surface text-text-secondary hover:border-brand-accent hover:text-brand-accent'
+                }`}
+                aria-label={
+                  isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'
+                }
+              >
+                <Heart
+                  className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`}
+                />
               </motion.button>
             </div>
 
