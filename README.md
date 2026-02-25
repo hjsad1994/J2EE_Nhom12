@@ -216,7 +216,7 @@ npm run dev
 
 | STT | Họ và Tên     |
 | --- | ------------- |
-| 1   | Huỳnh Gia Bửu |
+| 1   | Trần Tấn Tài  |
 | 2   |               |
 | 3   |               |
 | 4   |               |
