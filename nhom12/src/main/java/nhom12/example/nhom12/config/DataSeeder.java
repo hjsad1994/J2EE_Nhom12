@@ -7,9 +7,11 @@ import nhom12.example.nhom12.model.Product;
 import nhom12.example.nhom12.repository.CategoryRepository;
 import nhom12.example.nhom12.repository.ProductRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile({"dev", "test"})
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
@@ -18,8 +20,9 @@ public class DataSeeder implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
-    categoryRepository.deleteAll();
-    productRepository.deleteAll();
+    if (categoryRepository.count() > 0 || productRepository.count() > 0) {
+      return;
+    }
 
     // Seed categories
     List<Category> categories =
