@@ -38,16 +38,27 @@ public class MoMoServiceImpl implements MoMoService {
     String orderGroupId = "";
 
     // Build raw signature string (params in alphabetical order)
-    String rawHash = "accessKey=" + moMoConfig.getAccessKey()
-        + "&amount=" + amount
-        + "&extraData=" + extraData
-        + "&ipnUrl=" + moMoConfig.getIpnUrl()
-        + "&orderId=" + orderId
-        + "&orderInfo=" + orderInfo
-        + "&partnerCode=" + moMoConfig.getPartnerCode()
-        + "&redirectUrl=" + moMoConfig.getRedirectUrl()
-        + "&requestId=" + requestId
-        + "&requestType=" + REQUEST_TYPE;
+    String rawHash =
+        "accessKey="
+            + moMoConfig.getAccessKey()
+            + "&amount="
+            + amount
+            + "&extraData="
+            + extraData
+            + "&ipnUrl="
+            + moMoConfig.getIpnUrl()
+            + "&orderId="
+            + orderId
+            + "&orderInfo="
+            + orderInfo
+            + "&partnerCode="
+            + moMoConfig.getPartnerCode()
+            + "&redirectUrl="
+            + moMoConfig.getRedirectUrl()
+            + "&requestId="
+            + requestId
+            + "&requestType="
+            + REQUEST_TYPE;
 
     String signature = hmacSHA256(rawHash, moMoConfig.getSecretKey());
 
@@ -73,8 +84,8 @@ public class MoMoServiceImpl implements MoMoService {
 
     log.info("[MoMo] Creating payment request for orderId={}, amount={}", orderId, amount);
 
-    ResponseEntity<Map> response = restTemplate.postForEntity(
-        moMoConfig.getApiUrl(), request, Map.class);
+    ResponseEntity<Map> response =
+        restTemplate.postForEntity(moMoConfig.getApiUrl(), request, Map.class);
 
     Map<?, ?> responseBody = response.getBody();
     if (responseBody == null) {
@@ -96,19 +107,33 @@ public class MoMoServiceImpl implements MoMoService {
   @Override
   public boolean verifySignature(Map<String, String> params, String signature) {
     // IPN/Return signature raw string (params in alphabetical order)
-    String rawHash = "accessKey=" + moMoConfig.getAccessKey()
-        + "&amount=" + params.get("amount")
-        + "&extraData=" + params.getOrDefault("extraData", "")
-        + "&message=" + params.getOrDefault("message", "")
-        + "&orderId=" + params.get("orderId")
-        + "&orderInfo=" + params.getOrDefault("orderInfo", "")
-        + "&orderType=" + params.getOrDefault("orderType", "")
-        + "&partnerCode=" + params.get("partnerCode")
-        + "&payType=" + params.getOrDefault("payType", "")
-        + "&requestId=" + params.get("requestId")
-        + "&responseTime=" + params.getOrDefault("responseTime", "")
-        + "&resultCode=" + params.get("resultCode")
-        + "&transId=" + params.getOrDefault("transId", "");
+    String rawHash =
+        "accessKey="
+            + moMoConfig.getAccessKey()
+            + "&amount="
+            + params.get("amount")
+            + "&extraData="
+            + params.getOrDefault("extraData", "")
+            + "&message="
+            + params.getOrDefault("message", "")
+            + "&orderId="
+            + params.get("orderId")
+            + "&orderInfo="
+            + params.getOrDefault("orderInfo", "")
+            + "&orderType="
+            + params.getOrDefault("orderType", "")
+            + "&partnerCode="
+            + params.get("partnerCode")
+            + "&payType="
+            + params.getOrDefault("payType", "")
+            + "&requestId="
+            + params.get("requestId")
+            + "&responseTime="
+            + params.getOrDefault("responseTime", "")
+            + "&resultCode="
+            + params.get("resultCode")
+            + "&transId="
+            + params.getOrDefault("transId", "");
 
     String computed = hmacSHA256(rawHash, moMoConfig.getSecretKey());
     boolean valid = computed.equals(signature);
@@ -125,11 +150,16 @@ public class MoMoServiceImpl implements MoMoService {
     String transId = params.getOrDefault("transId", "");
     String message = params.getOrDefault("message", "");
 
-    log.info("[MoMo] Processing payment result: orderId={}, resultCode={}, transId={}",
-        orderId, resultCodeStr, transId);
+    log.info(
+        "[MoMo] Processing payment result: orderId={}, resultCode={}, transId={}",
+        orderId,
+        resultCodeStr,
+        transId);
 
-    Order order = orderRepository.findById(orderId)
-        .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+    Order order =
+        orderRepository
+            .findById(orderId)
+            .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
     int resultCode = Integer.parseInt(resultCodeStr);
     if (resultCode == 0) {
@@ -140,8 +170,11 @@ public class MoMoServiceImpl implements MoMoService {
     } else {
       order.setPaymentStatus("FAILED");
       order.setStatus(OrderStatus.CANCELLED);
-      log.warn("[MoMo] Payment failed for orderId={}, resultCode={}, message={}",
-          orderId, resultCode, message);
+      log.warn(
+          "[MoMo] Payment failed for orderId={}, resultCode={}, message={}",
+          orderId,
+          resultCode,
+          message);
     }
 
     orderRepository.save(order);
@@ -150,8 +183,8 @@ public class MoMoServiceImpl implements MoMoService {
   private String hmacSHA256(String data, String key) {
     try {
       Mac mac = Mac.getInstance("HmacSHA256");
-      SecretKeySpec secretKey = new SecretKeySpec(
-          key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+      SecretKeySpec secretKey =
+          new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
       mac.init(secretKey);
       byte[] hash = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
       StringBuilder hex = new StringBuilder();

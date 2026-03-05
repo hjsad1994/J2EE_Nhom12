@@ -8,7 +8,7 @@ public interface MoMoService {
    * Initiate a MoMo payment for an existing order.
    *
    * @param orderId MongoDB document ID used as MoMo orderId
-   * @param amount  order total in VND (long)
+   * @param amount order total in VND (long)
    * @param orderInfo human-readable description
    * @return MoMo payment URL to redirect the user
    */
@@ -24,8 +24,8 @@ public interface MoMoService {
   boolean verifySignature(Map<String, String> params, String signature);
 
   /**
-   * Process the payment result from IPN or return callback.
-   * Updates order paymentStatus and status accordingly.
+   * Process the payment result from IPN or return callback. Updates order paymentStatus and status
+   * accordingly.
    *
    * @param params all parameters from MoMo callback
    */

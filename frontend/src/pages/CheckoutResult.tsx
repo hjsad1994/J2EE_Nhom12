@@ -22,7 +22,12 @@ function CheckoutResult() {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
+              transition={{
+                type: 'spring',
+                stiffness: 200,
+                damping: 15,
+                delay: 0.2,
+              }}
               className="flex h-24 w-24 items-center justify-center rounded-full bg-green-100 ring-8 ring-green-50"
             >
               <Check className="h-12 w-12 text-green-600" strokeWidth={3} />
@@ -35,8 +40,11 @@ function CheckoutResult() {
 
           <p className="mt-4 text-text-secondary">
             Đơn hàng{' '}
-            <span className="font-mono font-bold text-text-primary">#{orderId}</span>{' '}
-            đã được thanh toán qua MoMo. Chúng tôi sẽ xử lý và giao hàng sớm nhất có thể.
+            <span className="font-mono font-bold text-text-primary">
+              #{orderId}
+            </span>{' '}
+            đã được thanh toán qua MoMo. Chúng tôi sẽ xử lý và giao hàng sớm
+            nhất có thể.
           </p>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -71,7 +79,12 @@ function CheckoutResult() {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
+            transition={{
+              type: 'spring',
+              stiffness: 200,
+              damping: 15,
+              delay: 0.2,
+            }}
             className="flex h-24 w-24 items-center justify-center rounded-full bg-red-100 ring-8 ring-red-50"
           >
             <XCircle className="h-12 w-12 text-red-500" strokeWidth={2} />
@@ -84,7 +97,9 @@ function CheckoutResult() {
 
         <p className="mt-4 text-text-secondary">
           Giao dịch MoMo cho đơn hàng{' '}
-          <span className="font-mono font-bold text-text-primary">#{orderId}</span>{' '}
+          <span className="font-mono font-bold text-text-primary">
+            #{orderId}
+          </span>{' '}
           không thành công. Đơn hàng của bạn đã bị huỷ.
         </p>
 

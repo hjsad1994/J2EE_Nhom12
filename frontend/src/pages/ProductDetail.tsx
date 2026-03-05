@@ -38,9 +38,12 @@ export function Component() {
         const p = res.data.data;
         setProduct(p);
         return apiClient
-          .get<ApiResponse<PaginatedResponse<Product>>>(ENDPOINTS.PRODUCTS.BASE, {
-            params: { size: 100 },
-          })
+          .get<ApiResponse<PaginatedResponse<Product>>>(
+            ENDPOINTS.PRODUCTS.BASE,
+            {
+              params: { size: 100 },
+            },
+          )
           .then((all) => {
             setRelated(
               all.data.data.content
@@ -253,7 +256,12 @@ export function Component() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => { if (product) { addToCart(product); navigate('/checkout'); } }}
+                onClick={() => {
+                  if (product) {
+                    addToCart(product);
+                    navigate('/checkout');
+                  }
+                }}
                 className="btn-outline px-6 py-4"
               >
                 Mua ngay

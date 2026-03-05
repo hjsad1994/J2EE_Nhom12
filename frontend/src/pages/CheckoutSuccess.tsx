@@ -6,7 +6,10 @@ export const Component = CheckoutSuccess;
 
 function CheckoutSuccess() {
   const location = useLocation();
-  const state = location.state as { fromCheckout?: boolean; orderId?: string } | null;
+  const state = location.state as {
+    fromCheckout?: boolean;
+    orderId?: string;
+  } | null;
   const fromCheckout = state?.fromCheckout;
 
   // Prevent direct URL access — only allow navigation from checkout flow

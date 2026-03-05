@@ -82,7 +82,10 @@ function Checkout() {
     };
 
     try {
-      const res = await apiClient.post<ApiResponse<Order>>(ENDPOINTS.ORDERS.BASE, payload);
+      const res = await apiClient.post<ApiResponse<Order>>(
+        ENDPOINTS.ORDERS.BASE,
+        payload,
+      );
       const orderId = res.data.data.id;
       clear();
 
@@ -93,7 +96,9 @@ function Checkout() {
         );
         window.location.href = momoRes.data.data.payUrl;
       } else {
-        navigate('/checkout/success', { state: { fromCheckout: true, orderId } });
+        navigate('/checkout/success', {
+          state: { fromCheckout: true, orderId },
+        });
       }
     } catch {
       setError('Đặt hàng thất bại. Vui lòng thử lại.');
@@ -352,7 +357,9 @@ function Checkout() {
             </section>
 
             {error && (
-              <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+              <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                {error}
+              </p>
             )}
           </form>
         </motion.div>

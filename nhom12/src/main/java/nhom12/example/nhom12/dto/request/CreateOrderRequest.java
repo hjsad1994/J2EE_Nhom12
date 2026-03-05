@@ -14,34 +14,25 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CreateOrderRequest {
 
-  @NotBlank
-  private String email;
+  @NotBlank private String email;
 
-  @NotBlank
-  private String customerName;
+  @NotBlank private String customerName;
 
-  @NotBlank
-  private String phone;
+  @NotBlank private String phone;
 
-  @NotBlank
-  private String address;
+  @NotBlank private String address;
 
-  @NotBlank
-  private String city;
+  @NotBlank private String city;
 
-  @NotBlank
-  private String district;
+  @NotBlank private String district;
 
-  @NotBlank
-  private String ward;
+  @NotBlank private String ward;
 
   private String note;
 
-  @NotBlank
-  private String paymentMethod;
+  @NotBlank private String paymentMethod;
 
-  @NotEmpty
-  private List<OrderItemRequest> items;
+  @NotEmpty private List<OrderItemRequest> items;
 
   @Getter
   @Setter

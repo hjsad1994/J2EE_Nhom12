@@ -38,14 +38,22 @@ export function Component() {
     setLoading(true);
     try {
       const endpoint = isLogin ? ENDPOINTS.AUTH.LOGIN : ENDPOINTS.AUTH.REGISTER;
-      const body = isLogin ? { username, password } : { username, email, password };
-      const res = await apiClient.post<ApiResponse<AuthResponse>>(endpoint, body);
+      const body = isLogin
+        ? { username, password }
+        : { username, email, password };
+      const res = await apiClient.post<ApiResponse<AuthResponse>>(
+        endpoint,
+        body,
+      );
       const { token, ...user } = res.data.data;
       login(token, user as AuthUser);
       navigate(user.role === 'ADMIN' ? '/admin' : '/');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      setError(axiosErr.response?.data?.message ?? 'Đã có lỗi xảy ra, vui lòng thử lại');
+      setError(
+        axiosErr.response?.data?.message ??
+          'Đã có lỗi xảy ra, vui lòng thử lại',
+      );
     } finally {
       setLoading(false);
     }
@@ -105,7 +113,10 @@ export function Component() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username - always visible */}
             <div className="space-y-1">
-              <label htmlFor="username" className="text-xs font-medium text-text-secondary">
+              <label
+                htmlFor="username"
+                className="text-xs font-medium text-text-secondary"
+              >
                 Tên đăng nhập
               </label>
               <div className="relative">
@@ -133,7 +144,10 @@ export function Component() {
                   className="overflow-hidden"
                 >
                   <div className="space-y-1">
-                    <label htmlFor="email" className="text-xs font-medium text-text-secondary">
+                    <label
+                      htmlFor="email"
+                      className="text-xs font-medium text-text-secondary"
+                    >
                       Email
                     </label>
                     <div className="relative">
@@ -230,7 +244,9 @@ export function Component() {
             )}
 
             {error && (
-              <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>
+              <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+                {error}
+              </p>
             )}
 
             <button
@@ -238,7 +254,11 @@ export function Component() {
               disabled={loading}
               className="btn-primary flex w-full cursor-pointer items-center justify-center gap-2 disabled:opacity-60"
             >
-              {loading ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Tạo tài khoản'}
+              {loading
+                ? 'Đang xử lý...'
+                : isLogin
+                  ? 'Đăng nhập'
+                  : 'Tạo tài khoản'}
               {!loading && <ArrowRight className="h-4 w-4" />}
             </button>
 

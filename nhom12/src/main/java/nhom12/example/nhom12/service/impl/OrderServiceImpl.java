@@ -36,8 +36,7 @@ public class OrderServiceImpl implements OrderService {
                         .build())
             .toList();
 
-    double subtotal =
-        items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
+    double subtotal = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
     double shippingFee = subtotal >= 500000 ? 0 : 30000;
     double total = subtotal + shippingFee;
 

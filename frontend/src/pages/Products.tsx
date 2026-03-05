@@ -14,16 +14,19 @@ export function Component() {
   const [search, setSearch] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('Tất cả');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'rating'>(
-    'default',
-  );
+  const [sortBy, setSortBy] = useState<
+    'default' | 'price-asc' | 'price-desc' | 'rating'
+  >('default');
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     Promise.all([
-      apiClient.get<ApiResponse<PaginatedResponse<Product>>>(ENDPOINTS.PRODUCTS.BASE, {
-        params: { size: 100 },
-      }),
+      apiClient.get<ApiResponse<PaginatedResponse<Product>>>(
+        ENDPOINTS.PRODUCTS.BASE,
+        {
+          params: { size: 100 },
+        },
+      ),
       apiClient.get<ApiResponse<Category[]>>(ENDPOINTS.CATEGORIES.BASE),
     ])
       .then(([productsRes, categoriesRes]) => {
@@ -236,7 +239,9 @@ export function Component() {
             <span>
               {' '}
               · Thương hiệu:{' '}
-              <span className="font-medium text-brand-accent">{selectedBrand}</span>
+              <span className="font-medium text-brand-accent">
+                {selectedBrand}
+              </span>
             </span>
           )}
         </p>

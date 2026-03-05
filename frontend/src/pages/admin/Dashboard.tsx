@@ -16,7 +16,12 @@ import { useNavigate } from 'react-router';
 import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
 import type { ApiResponse, PaginatedResponse } from '@/api/types';
-import type { Category, CreateCategoryPayload, CreateProductPayload, Product } from '@/types/product';
+import type {
+  Category,
+  CreateCategoryPayload,
+  CreateProductPayload,
+  Product,
+} from '@/types/product';
 import type { Order, OrderStatus } from '@/types/order';
 import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from '@/types/order';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -48,7 +53,9 @@ const emptyCategoryForm: CreateCategoryPayload = {
 };
 
 export function Component() {
-  const [tab, setTab] = useState<'users' | 'products' | 'categories' | 'orders'>('users');
+  const [tab, setTab] = useState<
+    'users' | 'products' | 'categories' | 'orders'
+  >('users');
 
   // Users
   const [users, setUsers] = useState<UserItem[]>([]);
@@ -60,7 +67,8 @@ export function Component() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productForm, setProductForm] = useState<CreateProductPayload>(emptyProductForm);
+  const [productForm, setProductForm] =
+    useState<CreateProductPayload>(emptyProductForm);
   const [savingProduct, setSavingProduct] = useState(false);
 
   // Categories
@@ -68,7 +76,8 @@ export function Component() {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [categoryForm, setCategoryForm] = useState<CreateCategoryPayload>(emptyCategoryForm);
+  const [categoryForm, setCategoryForm] =
+    useState<CreateCategoryPayload>(emptyCategoryForm);
   const [savingCategory, setSavingCategory] = useState(false);
 
   // Orders
@@ -109,7 +118,9 @@ export function Component() {
   const fetchOrders = () => {
     setLoadingOrders(true);
     apiClient
-      .get<ApiResponse<PaginatedResponse<Order>>>(ENDPOINTS.ORDERS.BASE, { params: { size: 100 } })
+      .get<ApiResponse<PaginatedResponse<Order>>>(ENDPOINTS.ORDERS.BASE, {
+        params: { size: 100 },
+      })
       .then((res) => setOrders(res.data.data.content))
       .finally(() => setLoadingOrders(false));
   };
@@ -156,7 +167,10 @@ export function Component() {
         categoryId: productForm.categoryId || undefined,
       };
       if (editingProduct) {
-        await apiClient.put(ENDPOINTS.PRODUCTS.BY_ID(editingProduct.id), payload);
+        await apiClient.put(
+          ENDPOINTS.PRODUCTS.BY_ID(editingProduct.id),
+          payload,
+        );
       } else {
         await apiClient.post(ENDPOINTS.PRODUCTS.BASE, payload);
       }
@@ -182,7 +196,11 @@ export function Component() {
 
   const openEditCategory = (c: Category) => {
     setEditingCategory(c);
-    setCategoryForm({ name: c.name, description: c.description ?? '', icon: c.icon ?? '' });
+    setCategoryForm({
+      name: c.name,
+      description: c.description ?? '',
+      icon: c.icon ?? '',
+    });
     setShowCategoryForm(true);
   };
 
@@ -190,7 +208,10 @@ export function Component() {
     setSavingCategory(true);
     try {
       if (editingCategory) {
-        await apiClient.put(ENDPOINTS.CATEGORIES.BY_ID(editingCategory.id), categoryForm);
+        await apiClient.put(
+          ENDPOINTS.CATEGORIES.BY_ID(editingCategory.id),
+          categoryForm,
+        );
       } else {
         await apiClient.post(ENDPOINTS.CATEGORIES.BASE, categoryForm);
       }
@@ -208,7 +229,9 @@ export function Component() {
   };
 
   const handleUpdateOrderStatus = async (id: string, status: OrderStatus) => {
-    await apiClient.patch(ENDPOINTS.ORDERS.STATUS(id), null, { params: { status } });
+    await apiClient.patch(ENDPOINTS.ORDERS.STATUS(id), null, {
+      params: { status },
+    });
     fetchOrders();
   };
 
@@ -225,7 +248,9 @@ export function Component() {
               <ShieldCheck className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="font-display text-lg font-bold text-text-primary">Admin Dashboard</h1>
+              <h1 className="font-display text-lg font-bold text-text-primary">
+                Admin Dashboard
+              </h1>
               <p className="text-xs text-text-muted">NEBULA Management</p>
             </div>
           </div>
@@ -259,7 +284,9 @@ export function Component() {
               </div>
               <div>
                 <p className="text-sm text-text-muted">Tổng người dùng</p>
-                <p className="font-display text-2xl font-bold text-text-primary">{totalUsers}</p>
+                <p className="font-display text-2xl font-bold text-text-primary">
+                  {totalUsers}
+                </p>
               </div>
             </div>
           </div>
@@ -270,7 +297,9 @@ export function Component() {
               </div>
               <div>
                 <p className="text-sm text-text-muted">User</p>
-                <p className="font-display text-2xl font-bold text-text-primary">{userCount}</p>
+                <p className="font-display text-2xl font-bold text-text-primary">
+                  {userCount}
+                </p>
               </div>
             </div>
           </div>
@@ -281,7 +310,9 @@ export function Component() {
               </div>
               <div>
                 <p className="text-sm text-text-muted">Sản phẩm</p>
-                <p className="font-display text-2xl font-bold text-text-primary">{products.length}</p>
+                <p className="font-display text-2xl font-bold text-text-primary">
+                  {products.length}
+                </p>
               </div>
             </div>
           </div>
@@ -326,7 +357,13 @@ export function Component() {
                   : 'bg-surface border border-border text-text-secondary hover:text-brand'
               }`}
             >
-              {t === 'users' ? 'Người dùng' : t === 'products' ? 'Sản phẩm' : t === 'categories' ? 'Danh mục' : 'Đơn hàng'}
+              {t === 'users'
+                ? 'Người dùng'
+                : t === 'products'
+                  ? 'Sản phẩm'
+                  : t === 'categories'
+                    ? 'Danh mục'
+                    : 'Đơn hàng'}
             </button>
           ))}
         </div>
@@ -360,8 +397,12 @@ export function Component() {
                         key={u.id}
                         className="border-b border-border last:border-0 hover:bg-surface-alt"
                       >
-                        <td className="px-6 py-4 font-medium text-text-primary">{u.username}</td>
-                        <td className="px-6 py-4 text-text-secondary">{u.email}</td>
+                        <td className="px-6 py-4 font-medium text-text-primary">
+                          {u.username}
+                        </td>
+                        <td className="px-6 py-4 text-text-secondary">
+                          {u.email}
+                        </td>
                         <td className="px-6 py-4">
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -374,7 +415,9 @@ export function Component() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-text-muted">
-                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : '—'}
+                          {u.createdAt
+                            ? new Date(u.createdAt).toLocaleDateString('vi-VN')
+                            : '—'}
                         </td>
                       </tr>
                     ))}
@@ -434,7 +477,9 @@ export function Component() {
                         <td className="px-4 py-3 font-medium text-text-primary max-w-[160px] truncate">
                           {p.name}
                         </td>
-                        <td className="px-4 py-3 text-text-secondary">{p.brand}</td>
+                        <td className="px-4 py-3 text-text-secondary">
+                          {p.brand}
+                        </td>
                         <td className="px-4 py-3">
                           {p.categoryName ? (
                             <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-medium text-brand">
@@ -447,7 +492,9 @@ export function Component() {
                         <td className="px-4 py-3 text-text-primary">
                           {p.price.toLocaleString('vi-VN')}₫
                         </td>
-                        <td className="px-4 py-3 text-text-secondary">{p.rating}</td>
+                        <td className="px-4 py-3 text-text-secondary">
+                          {p.rating}
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
                             <button
@@ -512,12 +559,18 @@ export function Component() {
                         key={c.id}
                         className="border-b border-border last:border-0 hover:bg-surface-alt"
                       >
-                        <td className="px-6 py-4 font-medium text-text-primary">{c.name}</td>
-                        <td className="px-6 py-4 text-text-muted font-mono text-xs">{c.slug}</td>
+                        <td className="px-6 py-4 font-medium text-text-primary">
+                          {c.name}
+                        </td>
+                        <td className="px-6 py-4 text-text-muted font-mono text-xs">
+                          {c.slug}
+                        </td>
                         <td className="px-6 py-4 text-text-secondary max-w-[200px] truncate">
                           {c.description || '—'}
                         </td>
-                        <td className="px-6 py-4 text-text-muted">{c.icon || '—'}</td>
+                        <td className="px-6 py-4 text-text-muted">
+                          {c.icon || '—'}
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex gap-2">
                             <button
@@ -576,12 +629,17 @@ export function Component() {
                   </thead>
                   <tbody>
                     {orders.map((o) => (
-                      <tr key={o.id} className="border-b border-border last:border-0 hover:bg-surface-alt">
+                      <tr
+                        key={o.id}
+                        className="border-b border-border last:border-0 hover:bg-surface-alt"
+                      >
                         <td className="px-4 py-3 font-mono text-xs text-text-muted">
                           {o.id.slice(-8).toUpperCase()}
                         </td>
                         <td className="px-4 py-3">
-                          <p className="font-medium text-text-primary">{o.customerName}</p>
+                          <p className="font-medium text-text-primary">
+                            {o.customerName}
+                          </p>
                           <p className="text-xs text-text-muted">{o.phone}</p>
                         </td>
                         <td className="px-4 py-3 text-text-secondary">
@@ -594,14 +652,21 @@ export function Component() {
                           {o.paymentMethod}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${ORDER_STATUS_COLOR[o.status]}`}>
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${ORDER_STATUS_COLOR[o.status]}`}
+                          >
                             {ORDER_STATUS_LABEL[o.status]}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <select
                             value={o.status}
-                            onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value as OrderStatus)}
+                            onChange={(e) =>
+                              handleUpdateOrderStatus(
+                                o.id,
+                                e.target.value as OrderStatus,
+                              )
+                            }
                             className="cursor-pointer rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text-secondary outline-none"
                           >
                             <option value="PENDING">Chờ xác nhận</option>
@@ -653,8 +718,17 @@ export function Component() {
                   </label>
                   <input
                     type="text"
-                    value={(productForm as Record<string, unknown>)[field] as string ?? ''}
-                    onChange={(e) => setProductForm({ ...productForm, [field]: e.target.value })}
+                    value={
+                      ((productForm as Record<string, unknown>)[
+                        field
+                      ] as string) ?? ''
+                    }
+                    onChange={(e) =>
+                      setProductForm({
+                        ...productForm,
+                        [field]: e.target.value,
+                      })
+                    }
                     className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm outline-none focus:border-brand"
                   />
                 </div>
@@ -667,7 +741,12 @@ export function Component() {
                 </label>
                 <select
                   value={productForm.categoryId ?? ''}
-                  onChange={(e) => setProductForm({ ...productForm, categoryId: e.target.value })}
+                  onChange={(e) =>
+                    setProductForm({
+                      ...productForm,
+                      categoryId: e.target.value,
+                    })
+                  }
                   className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm outline-none focus:border-brand"
                 >
                   <option value="">-- Không có danh mục --</option>
@@ -688,7 +767,10 @@ export function Component() {
                     type="number"
                     value={productForm.price}
                     onChange={(e) =>
-                      setProductForm({ ...productForm, price: Number(e.target.value) })
+                      setProductForm({
+                        ...productForm,
+                        price: Number(e.target.value),
+                      })
                     }
                     className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm outline-none focus:border-brand"
                   />
@@ -703,7 +785,9 @@ export function Component() {
                     onChange={(e) =>
                       setProductForm({
                         ...productForm,
-                        originalPrice: e.target.value ? Number(e.target.value) : undefined,
+                        originalPrice: e.target.value
+                          ? Number(e.target.value)
+                          : undefined,
                       })
                     }
                     className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm outline-none focus:border-brand"
@@ -720,7 +804,10 @@ export function Component() {
                     max="5"
                     value={productForm.rating ?? 0}
                     onChange={(e) =>
-                      setProductForm({ ...productForm, rating: Number(e.target.value) })
+                      setProductForm({
+                        ...productForm,
+                        rating: Number(e.target.value),
+                      })
                     }
                     className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm outline-none focus:border-brand"
                   />
@@ -741,7 +828,11 @@ export function Component() {
                 disabled={savingProduct}
                 className="flex-1 cursor-pointer rounded-lg bg-brand py-2 text-sm font-medium text-white hover:bg-brand-accent disabled:opacity-60"
               >
-                {savingProduct ? 'Đang lưu...' : editingProduct ? 'Cập nhật' : 'Tạo mới'}
+                {savingProduct
+                  ? 'Đang lưu...'
+                  : editingProduct
+                    ? 'Cập nhật'
+                    : 'Tạo mới'}
               </button>
             </div>
           </div>
@@ -772,18 +863,25 @@ export function Component() {
                 <input
                   type="text"
                   value={categoryForm.name}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setCategoryForm({ ...categoryForm, name: e.target.value })
+                  }
                   className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm outline-none focus:border-brand"
                   placeholder="VD: Flagship, Tầm trung..."
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-text-secondary">Mô tả</label>
+                <label className="mb-1 block text-xs font-medium text-text-secondary">
+                  Mô tả
+                </label>
                 <input
                   type="text"
                   value={categoryForm.description ?? ''}
                   onChange={(e) =>
-                    setCategoryForm({ ...categoryForm, description: e.target.value })
+                    setCategoryForm({
+                      ...categoryForm,
+                      description: e.target.value,
+                    })
                   }
                   className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm outline-none focus:border-brand"
                   placeholder="Mô tả ngắn về danh mục..."
@@ -796,7 +894,9 @@ export function Component() {
                 <input
                   type="text"
                   value={categoryForm.icon ?? ''}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
+                  onChange={(e) =>
+                    setCategoryForm({ ...categoryForm, icon: e.target.value })
+                  }
                   className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm outline-none focus:border-brand"
                   placeholder="VD: crown, smartphone, camera..."
                 />
@@ -816,7 +916,11 @@ export function Component() {
                 disabled={savingCategory || !categoryForm.name.trim()}
                 className="flex-1 cursor-pointer rounded-lg bg-brand py-2 text-sm font-medium text-white hover:bg-brand-accent disabled:opacity-60"
               >
-                {savingCategory ? 'Đang lưu...' : editingCategory ? 'Cập nhật' : 'Tạo mới'}
+                {savingCategory
+                  ? 'Đang lưu...'
+                  : editingCategory
+                    ? 'Cập nhật'
+                    : 'Tạo mới'}
               </button>
             </div>
           </div>

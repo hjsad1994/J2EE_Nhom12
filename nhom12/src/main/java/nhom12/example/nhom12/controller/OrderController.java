@@ -56,8 +56,7 @@ public class OrderController {
   @GetMapping
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<Page<OrderResponse>>> getAllOrders(
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "20") int size) {
+      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
     return ResponseEntity.ok(
         ApiResponse.success(
             orderService.getAllOrders(PageRequest.of(page, size)),
@@ -76,7 +75,8 @@ public class OrderController {
     User user =
         userRepository
             .findByUsername(principal.getUsername())
-            .orElseThrow(() -> new ResourceNotFoundException("User", "username", principal.getUsername()));
+            .orElseThrow(
+                () -> new ResourceNotFoundException("User", "username", principal.getUsername()));
     return user.getId();
   }
 }

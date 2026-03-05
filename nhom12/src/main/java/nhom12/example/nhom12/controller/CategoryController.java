@@ -29,13 +29,15 @@ public class CategoryController {
   @GetMapping
   public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
     return ResponseEntity.ok(
-        ApiResponse.success(categoryService.getAllCategories(), "Categories retrieved successfully"));
+        ApiResponse.success(
+            categoryService.getAllCategories(), "Categories retrieved successfully"));
   }
 
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryById(@PathVariable String id) {
     return ResponseEntity.ok(
-        ApiResponse.success(categoryService.getCategoryById(id), "Category retrieved successfully"));
+        ApiResponse.success(
+            categoryService.getCategoryById(id), "Category retrieved successfully"));
   }
 
   @PostMapping

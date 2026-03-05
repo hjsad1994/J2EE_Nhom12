@@ -18,8 +18,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @SuperBuilder
 public class Order extends BaseDocument {
 
-  @Indexed
-  private String userId;
+  @Indexed private String userId;
 
   private String email;
   private String customerName;

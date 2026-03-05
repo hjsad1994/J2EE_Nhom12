@@ -16,8 +16,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @SuperBuilder
 public class Product extends BaseDocument {
 
-  @Indexed
-  private String name;
+  @Indexed private String name;
 
   private String brand;
   private String categoryId;

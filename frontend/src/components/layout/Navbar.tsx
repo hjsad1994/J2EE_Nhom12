@@ -1,4 +1,13 @@
-import { Heart, LogOut, Menu, ShieldCheck, ShoppingCart, Smartphone, User, X } from 'lucide-react';
+import {
+  Heart,
+  LogOut,
+  Menu,
+  ShieldCheck,
+  ShoppingCart,
+  Smartphone,
+  User,
+  X,
+} from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -193,7 +202,10 @@ export default function Navbar() {
                   <li>
                     <button
                       type="button"
-                      onClick={() => { setMobileOpen(false); handleLogout(); }}
+                      onClick={() => {
+                        setMobileOpen(false);
+                        handleLogout();
+                      }}
                       className="block w-full rounded-lg px-4 py-2.5 text-left text-sm font-medium text-red-500 transition-colors hover:bg-surface-alt"
                     >
                       Đăng xuất

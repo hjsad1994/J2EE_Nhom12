@@ -35,33 +35,42 @@ public class MoMoController {
   private final UserRepository userRepository;
 
   /**
-   * Initiate MoMo payment for an existing order.
-   * Returns the MoMo payment URL.
-   * Requires authentication.
+   * Initiate MoMo payment for an existing order. Returns the MoMo payment URL. Requires
+   * authentication.
    */
   @PostMapping("/api/momo/create")
   public ResponseEntity<ApiResponse<Map<String, String>>> createPayment(
-      @RequestParam String orderId,
-      @AuthenticationPrincipal UserDetails principal) {
+      @RequestParam String orderId, @AuthenticationPrincipal UserDetails principal) {
 
-    User user = userRepository.findByUsername(principal.getUsername())
-        .orElseThrow(() -> new ResourceNotFoundException("User", "username", principal.getUsername()));
+    User user =
+        userRepository
+            .findByUsername(principal.getUsername())
+            .orElseThrow(
+                () -> new ResourceNotFoundException("User", "username", principal.getUsername()));
 
-    Order order = orderRepository.findById(orderId)
-        .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+    Order order =
+        orderRepository
+            .findById(orderId)
+            .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
     // Security: ensure the order belongs to the requesting user
     if (!order.getUserId().equals(user.getId())) {
       return ResponseEntity.status(403)
-          .body(ApiResponse.<Map<String, String>>builder()
-              .status(403).message("Access denied: order does not belong to you").build());
+          .body(
+              ApiResponse.<Map<String, String>>builder()
+                  .status(403)
+                  .message("Access denied: order does not belong to you")
+                  .build());
     }
 
     // Prevent duplicate payments
     if ("PAID".equals(order.getPaymentStatus())) {
       return ResponseEntity.badRequest()
-          .body(ApiResponse.<Map<String, String>>builder()
-              .status(400).message("Order has already been paid").build());
+          .body(
+              ApiResponse.<Map<String, String>>builder()
+                  .status(400)
+                  .message("Order has already been paid")
+                  .build());
     }
 
     long amount = Math.round(order.getTotal());
@@ -75,13 +84,12 @@ public class MoMoController {
   }
 
   /**
-   * MoMo redirects the user browser here after payment (success or failure).
-   * Verifies signature and redirects to frontend result page.
+   * MoMo redirects the user browser here after payment (success or failure). Verifies signature and
+   * redirects to frontend result page.
    */
   @GetMapping("/momo/return")
-  public void momoReturn(
-      @RequestParam Map<String, String> params,
-      HttpServletResponse response) throws IOException {
+  public void momoReturn(@RequestParam Map<String, String> params, HttpServletResponse response)
+      throws IOException {
 
     // Use mutable copy since @RequestParam maps are unmodifiable
     Map<String, String> mutableParams = new HashMap<>(params);
@@ -94,14 +102,16 @@ public class MoMoController {
     boolean valid = moMoService.verifySignature(mutableParams, signature);
     if (!valid) {
       log.error("[MoMo] Invalid signature on return callback for orderId={}", orderId);
-      response.sendRedirect(FRONTEND_URL + "/checkout/result?success=false&error=invalid_signature");
+      response.sendRedirect(
+          FRONTEND_URL + "/checkout/result?success=false&error=invalid_signature");
       return;
     }
 
     // Only process if not already handled by IPN
     try {
       Order order = orderRepository.findById(orderId).orElse(null);
-      if (order != null && !"PAID".equals(order.getPaymentStatus())
+      if (order != null
+          && !"PAID".equals(order.getPaymentStatus())
           && !"FAILED".equals(order.getPaymentStatus())) {
         moMoService.processPaymentResult(mutableParams);
       }
@@ -110,16 +120,16 @@ public class MoMoController {
     }
 
     boolean success = "0".equals(resultCode);
-    response.sendRedirect(FRONTEND_URL + "/checkout/result?success=" + success + "&orderId=" + orderId);
+    response.sendRedirect(
+        FRONTEND_URL + "/checkout/result?success=" + success + "&orderId=" + orderId);
   }
 
   /**
-   * MoMo sends async IPN (Instant Payment Notification) here.
-   * Must return HTTP 200 with resultCode=0 to acknowledge receipt.
+   * MoMo sends async IPN (Instant Payment Notification) here. Must return HTTP 200 with
+   * resultCode=0 to acknowledge receipt.
    */
   @PostMapping("/momo/ipn")
-  public ResponseEntity<Map<String, Object>> momoIpn(
-      @RequestBody Map<String, Object> rawParams) {
+  public ResponseEntity<Map<String, Object>> momoIpn(@RequestBody Map<String, Object> rawParams) {
 
     // Convert all values to String for uniform handling
     Map<String, String> params = new HashMap<>();
