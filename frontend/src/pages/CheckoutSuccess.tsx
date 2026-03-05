@@ -1,31 +1,20 @@
 import { Check, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useId } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
 
 export const Component = CheckoutSuccess;
 
-function generateOrderId(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  }
-  const num = (Math.abs(hash) % 900000) + 100000;
-  return `ORD-${num}`;
-}
-
 function CheckoutSuccess() {
-  const id = useId();
   const location = useLocation();
-  const fromCheckout = (location.state as { fromCheckout?: boolean })
-    ?.fromCheckout;
+  const state = location.state as { fromCheckout?: boolean; orderId?: string } | null;
+  const fromCheckout = state?.fromCheckout;
 
   // Prevent direct URL access — only allow navigation from checkout flow
   if (!fromCheckout) {
     return <Navigate to="/products" replace />;
   }
 
-  const orderId = generateOrderId(id);
+  const orderId = state?.orderId ?? 'N/A';
 
   return (
     <section className="flex min-h-[70vh] items-center justify-center px-6">

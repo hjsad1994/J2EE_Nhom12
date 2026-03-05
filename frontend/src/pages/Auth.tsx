@@ -1,14 +1,54 @@
 import { ArrowRight, Lock, Mail, Smartphone, User } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { type FormEvent, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import apiClient from '@/api/client';
+import { ENDPOINTS } from '@/api/endpoints';
+import type { ApiResponse } from '@/api/types';
+import { useAuthStore, type AuthUser } from '@/store/useAuthStore';
+
+interface AuthResponse {
+  token: string;
+  id: string;
+  username: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+}
 
 export function Component() {
   const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const login = useAuthStore((s) => s.login);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // TODO: Implement auth logic
+    setError('');
+
+    if (!isLogin && password !== confirmPassword) {
+      setError('Mật khẩu nhập lại không khớp');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const endpoint = isLogin ? ENDPOINTS.AUTH.LOGIN : ENDPOINTS.AUTH.REGISTER;
+      const body = isLogin ? { username, password } : { username, email, password };
+      const res = await apiClient.post<ApiResponse<AuthResponse>>(endpoint, body);
+      const { token, ...user } = res.data.data;
+      login(token, user as AuthUser);
+      navigate(user.role === 'ADMIN' ? '/admin' : '/');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setError(axiosErr.response?.data?.message ?? 'Đã có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,53 +103,55 @@ export function Component() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Username - always visible */}
+            <div className="space-y-1">
+              <label htmlFor="username" className="text-xs font-medium text-text-secondary">
+                Tên đăng nhập
+              </label>
+              <div className="relative">
+                <User className="pointer-events-none absolute top-2.5 left-3 h-5 w-5 text-text-muted" />
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-10 py-2.5 text-sm outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-brand"
+                  placeholder="username123"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Email - only for register */}
             <AnimatePresence mode="popLayout">
               {!isLogin && (
                 <motion.div
-                  key="name-field"
+                  key="email-field"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="space-y-4 overflow-hidden"
+                  className="overflow-hidden"
                 >
                   <div className="space-y-1">
-                    <label
-                      htmlFor="fullName"
-                      className="text-xs font-medium text-text-secondary"
-                    >
-                      Họ và tên
+                    <label htmlFor="email" className="text-xs font-medium text-text-secondary">
+                      Email
                     </label>
                     <div className="relative">
-                      <User className="pointer-events-none absolute top-2.5 left-3 h-5 w-5 text-text-muted" />
+                      <Mail className="pointer-events-none absolute top-2.5 left-3 h-5 w-5 text-text-muted" />
                       <input
-                        id="fullName"
-                        type="text"
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         className="w-full rounded-lg border border-border bg-surface px-10 py-2.5 text-sm outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-brand"
-                        placeholder="Nguyễn Văn A"
+                        placeholder="email@example.com"
+                        required
                       />
                     </div>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-
-            <div className="space-y-1">
-              <label
-                htmlFor="email"
-                className="text-xs font-medium text-text-secondary"
-              >
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute top-2.5 left-3 h-5 w-5 text-text-muted" />
-                <input
-                  id="email"
-                  type="email"
-                  className="w-full rounded-lg border border-border bg-surface px-10 py-2.5 text-sm outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-brand"
-                  placeholder="email@example.com"
-                />
-              </div>
-            </div>
 
             <div className="space-y-1">
               <label
@@ -123,8 +165,11 @@ export function Component() {
                 <input
                   id="password"
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-lg border border-border bg-surface px-10 py-2.5 text-sm outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-brand"
                   placeholder="••••••••"
+                  required
                 />
               </div>
             </div>
@@ -150,8 +195,11 @@ export function Component() {
                       <input
                         id="confirmPassword"
                         type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                         className="w-full rounded-lg border border-border bg-surface px-10 py-2.5 text-sm outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-brand"
                         placeholder="••••••••"
+                        required
                       />
                     </div>
                   </div>
@@ -181,12 +229,17 @@ export function Component() {
               </div>
             )}
 
+            {error && (
+              <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>
+            )}
+
             <button
               type="submit"
-              className="btn-primary flex w-full cursor-pointer items-center justify-center gap-2"
+              disabled={loading}
+              className="btn-primary flex w-full cursor-pointer items-center justify-center gap-2 disabled:opacity-60"
             >
-              {isLogin ? 'Đăng nhập' : 'Tạo tài khoản'}
-              <ArrowRight className="h-4 w-4" />
+              {loading ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Tạo tài khoản'}
+              {!loading && <ArrowRight className="h-4 w-4" />}
             </button>
 
             {/* Social Login Divider */}
