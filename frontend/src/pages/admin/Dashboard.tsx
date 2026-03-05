@@ -718,7 +718,7 @@ export function Component() {
                   <input
                     type="text"
                     value={
-                      ((productForm as Record<string, unknown>)[
+                      ((productForm as unknown as Record<string, unknown>)[
                         field
                       ] as string) ?? ''
                     }
