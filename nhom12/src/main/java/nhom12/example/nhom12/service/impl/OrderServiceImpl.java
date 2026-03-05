@@ -4,11 +4,14 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import nhom12.example.nhom12.dto.request.CreateOrderRequest;
 import nhom12.example.nhom12.dto.response.OrderResponse;
+import nhom12.example.nhom12.exception.BadRequestException;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Order;
 import nhom12.example.nhom12.model.OrderItem;
+import nhom12.example.nhom12.model.Product;
 import nhom12.example.nhom12.model.enums.OrderStatus;
 import nhom12.example.nhom12.repository.OrderRepository;
+import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.service.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +21,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+  private static final int MIN_ORDER_ITEM_QUANTITY = 1;
+  private static final int MAX_ORDER_ITEM_QUANTITY = 100;
+
   private final OrderRepository orderRepository;
+  private final ProductRepository productRepository;
 
   @Override
   public OrderResponse createOrder(String userId, CreateOrderRequest request) {
@@ -26,14 +33,14 @@ public class OrderServiceImpl implements OrderService {
         request.getItems().stream()
             .map(
                 i ->
-                    OrderItem.builder()
-                        .productId(i.getProductId())
-                        .productName(i.getProductName())
-                        .productImage(i.getProductImage())
-                        .brand(i.getBrand())
-                        .price(i.getPrice())
-                        .quantity(i.getQuantity())
-                        .build())
+                    buildOrderItem(
+                        productRepository
+                            .findById(i.getProductId())
+                            .orElseThrow(
+                                () ->
+                                    new ResourceNotFoundException(
+                                        "Product", "id", i.getProductId())),
+                        i.getQuantity()))
             .toList();
 
     double subtotal = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
@@ -61,6 +68,25 @@ public class OrderServiceImpl implements OrderService {
             .build();
 
     return toResponse(orderRepository.save(order));
+  }
+
+  private OrderItem buildOrderItem(Product product, int quantity) {
+    if (quantity < MIN_ORDER_ITEM_QUANTITY || quantity > MAX_ORDER_ITEM_QUANTITY) {
+      throw new BadRequestException(
+          "Order item quantity must be between "
+              + MIN_ORDER_ITEM_QUANTITY
+              + " and "
+              + MAX_ORDER_ITEM_QUANTITY);
+    }
+
+    return OrderItem.builder()
+        .productId(product.getId())
+        .productName(product.getName())
+        .productImage(product.getImage())
+        .brand(product.getBrand())
+        .price(product.getPrice())
+        .quantity(quantity)
+        .build();
   }
 
   @Override
