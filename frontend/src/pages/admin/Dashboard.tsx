@@ -235,7 +235,6 @@ export function Component() {
     fetchOrders();
   };
 
-  const adminCount = users.filter((u) => u.role === 'ADMIN').length;
   const userCount = users.filter((u) => u.role === 'USER').length;
 
   return (

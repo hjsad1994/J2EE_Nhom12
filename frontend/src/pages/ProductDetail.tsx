@@ -31,6 +31,7 @@ export function Component() {
 
   useEffect(() => {
     if (!id) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     apiClient
       .get<ApiResponse<Product>>(ENDPOINTS.PRODUCTS.BY_ID(id))
