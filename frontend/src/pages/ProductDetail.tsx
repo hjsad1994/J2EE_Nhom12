@@ -9,16 +9,61 @@ import {
   Truck,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Link, useParams } from 'react-router';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
 import ProductCard from '@/components/ui/ProductCard';
-import { allProducts } from '@/data/products';
+import apiClient from '@/api/client';
+import { ENDPOINTS } from '@/api/endpoints';
+import type { ApiResponse, PaginatedResponse } from '@/api/types';
+import type { Product } from '@/types/product';
 import { useWishlistStore } from '@/store/useWishlistStore';
+import { useCartStore } from '@/store/useCartStore';
 
 export function Component() {
   const { id } = useParams<{ id: string }>();
-  const product = allProducts.find((p) => p.id === id);
+  const navigate = useNavigate();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [related, setRelated] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const toggleWishlist = useWishlistStore((s) => s.toggle);
   const isWishlisted = useWishlistStore((s) => s.has(product?.id ?? ''));
+  const addToCart = useCartStore((s) => s.addItem);
+
+  useEffect(() => {
+    if (!id) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    apiClient
+      .get<ApiResponse<Product>>(ENDPOINTS.PRODUCTS.BY_ID(id))
+      .then((res) => {
+        const p = res.data.data;
+        setProduct(p);
+        return apiClient
+          .get<ApiResponse<PaginatedResponse<Product>>>(
+            ENDPOINTS.PRODUCTS.BASE,
+            {
+              params: { size: 100 },
+            },
+          )
+          .then((all) => {
+            setRelated(
+              all.data.data.content
+                .filter((r) => r.brand === p.brand && r.id !== p.id)
+                .slice(0, 4),
+            );
+          });
+      })
+      .catch(() => setProduct(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface pt-20 text-text-muted">
+        Đang tải...
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -38,10 +83,6 @@ export function Component() {
       </div>
     );
   }
-
-  const related = allProducts
-    .filter((p) => p.brand === product.brand && p.id !== product.id)
-    .slice(0, 4);
 
   const discount = product.originalPrice
     ? Math.round((1 - product.price / product.originalPrice) * 100)
@@ -207,6 +248,7 @@ export function Component() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() => product && addToCart(product)}
                 className="btn-primary flex flex-1 items-center justify-center gap-2 py-4"
               >
                 <ShoppingCart className="h-5 w-5" />
@@ -215,6 +257,12 @@ export function Component() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  if (product) {
+                    addToCart(product);
+                    navigate('/checkout');
+                  }
+                }}
                 className="btn-outline px-6 py-4"
               >
                 Mua ngay

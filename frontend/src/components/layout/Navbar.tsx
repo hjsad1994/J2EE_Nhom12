@@ -1,13 +1,20 @@
-import { Heart, Menu, ShoppingCart, Smartphone, User, X } from 'lucide-react';
+import {
+  Heart,
+  LogOut,
+  Menu,
+  ShieldCheck,
+  ShoppingCart,
+  Smartphone,
+  User,
+  X,
+} from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
-
-// TODO: Replace with real auth state from Zustand store
-const isLoggedIn = false;
+import { useAuthStore } from '@/store/useAuthStore';
 
 const navLinks = [
   { label: 'Trang chủ', href: '/' },
@@ -19,6 +26,13 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const cartCount = useCartStore((s) => s.totalItems());
+  const { isLoggedIn, isAdmin, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <motion.header
@@ -98,13 +112,33 @@ export default function Navbar() {
 
           {/* Profile / Login */}
           {isLoggedIn ? (
-            <Link
-              to="/profile"
-              className="rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
-              title="Tài khoản"
-            >
-              <User className="h-5 w-5" />
-            </Link>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="hidden items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-100 no-underline md:flex"
+                  title="Admin Dashboard"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Admin
+                </Link>
+              )}
+              <Link
+                to="/profile"
+                className="rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
+                title="Tài khoản"
+              >
+                <User className="h-5 w-5" />
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="cursor-pointer rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-red-500"
+                title="Đăng xuất"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
+            </div>
           ) : (
             <Link
               to="/login"
@@ -152,7 +186,33 @@ export default function Navbar() {
                   </Link>
                 </li>
               ))}
-              {!isLoggedIn && (
+              {isLoggedIn ? (
+                <>
+                  {isAdmin && (
+                    <li>
+                      <Link
+                        to="/admin"
+                        onClick={() => setMobileOpen(false)}
+                        className="block rounded-lg px-4 py-2.5 text-sm font-medium text-purple-700 transition-colors hover:bg-surface-alt no-underline"
+                      >
+                        Admin Dashboard
+                      </Link>
+                    </li>
+                  )}
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileOpen(false);
+                        handleLogout();
+                      }}
+                      className="block w-full rounded-lg px-4 py-2.5 text-left text-sm font-medium text-red-500 transition-colors hover:bg-surface-alt"
+                    >
+                      Đăng xuất
+                    </button>
+                  </li>
+                </>
+              ) : (
                 <li>
                   <Link
                     to="/login"

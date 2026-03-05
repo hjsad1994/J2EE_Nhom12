@@ -10,7 +10,12 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
+import apiClient from '@/api/client';
+import { ENDPOINTS } from '@/api/endpoints';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
+import type { ApiResponse } from '@/api/types';
+import type { CreateOrderPayload, Order } from '@/types/order';
 
 export const Component = Checkout;
 
@@ -24,8 +29,10 @@ function Checkout() {
   const items = useCartStore((s) => s.items);
   const totalPrice = useCartStore((s) => s.totalPrice());
   const clear = useCartStore((s) => s.clear);
+  const { user } = useAuthStore();
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
 
   if (items.length === 0) {
@@ -49,16 +56,55 @@ function Checkout() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
-    // TODO: Send order data to backend API (Phase 3)
-    // Form inputs have name attributes — use `new FormData(e.currentTarget)`
-    // to collect: email, name, phone, address, city, district, ward, payment, note
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const fd = new FormData(e.currentTarget);
 
-    setLoading(false);
-    navigate('/checkout/success', { state: { fromCheckout: true } });
-    clear();
+    const payload: CreateOrderPayload = {
+      email: fd.get('email') as string,
+      customerName: fd.get('name') as string,
+      phone: fd.get('phone') as string,
+      address: fd.get('address') as string,
+      city: fd.get('city') as string,
+      district: fd.get('district') as string,
+      ward: fd.get('ward') as string,
+      note: (fd.get('note') as string) || undefined,
+      paymentMethod,
+      items: items.map(({ product, quantity }) => ({
+        productId: product.id,
+        productName: product.name,
+        productImage: product.image,
+        brand: product.brand,
+        price: product.price,
+        quantity,
+      })),
+    };
+
+    try {
+      const res = await apiClient.post<ApiResponse<Order>>(
+        ENDPOINTS.ORDERS.BASE,
+        payload,
+      );
+      const orderId = res.data.data.id;
+      clear();
+
+      if (paymentMethod === 'MOMO') {
+        // Get MoMo payment URL then redirect browser to it
+        const momoRes = await apiClient.post<ApiResponse<{ payUrl: string }>>(
+          ENDPOINTS.MOMO.CREATE(orderId),
+        );
+        window.location.href = momoRes.data.data.payUrl;
+      } else {
+        navigate('/checkout/success', {
+          state: { fromCheckout: true, orderId },
+        });
+      }
+    } catch {
+      setError('Đặt hàng thất bại. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -109,6 +155,7 @@ function Checkout() {
                     id="email"
                     name="email"
                     required
+                    defaultValue={user?.email ?? ''}
                     placeholder="nguyenvan@example.com"
                     className={inputClass}
                   />
@@ -308,6 +355,12 @@ function Checkout() {
                 className={`${inputClass} resize-none`}
               />
             </section>
+
+            {error && (
+              <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                {error}
+              </p>
+            )}
           </form>
         </motion.div>
 

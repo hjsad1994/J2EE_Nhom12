@@ -1,21 +1,53 @@
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ProductCard from '@/components/ui/ProductCard';
-import { allProducts } from '@/data/products';
-
-const brands = ['Tất cả', ...new Set(allProducts.map((p) => p.brand))];
+import apiClient from '@/api/client';
+import { ENDPOINTS } from '@/api/endpoints';
+import type { ApiResponse, PaginatedResponse } from '@/api/types';
+import type { Category, Product } from '@/types/product';
 
 export function Component() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('Tất cả');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState<
     'default' | 'price-asc' | 'price-desc' | 'rating'
   >('default');
   const [showFilters, setShowFilters] = useState(false);
 
+  useEffect(() => {
+    Promise.all([
+      apiClient.get<ApiResponse<PaginatedResponse<Product>>>(
+        ENDPOINTS.PRODUCTS.BASE,
+        {
+          params: { size: 100 },
+        },
+      ),
+      apiClient.get<ApiResponse<Category[]>>(ENDPOINTS.CATEGORIES.BASE),
+    ])
+      .then(([productsRes, categoriesRes]) => {
+        setProducts(productsRes.data.data.content);
+        setCategories(categoriesRes.data.data);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const brands = useMemo(
+    () => ['Tất cả', ...Array.from(new Set(products.map((p) => p.brand)))],
+    [products],
+  );
+
   const filtered = useMemo(() => {
-    let result = allProducts;
+    let result = products;
+
+    // Category filter
+    if (selectedCategory) {
+      result = result.filter((p) => p.categoryId === selectedCategory);
+    }
 
     // Search
     if (search) {
@@ -24,7 +56,8 @@ export function Component() {
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.brand.toLowerCase().includes(q) ||
-          p.specs?.toLowerCase().includes(q),
+          p.specs?.toLowerCase().includes(q) ||
+          p.categoryName?.toLowerCase().includes(q),
       );
     }
 
@@ -47,7 +80,7 @@ export function Component() {
     }
 
     return result;
-  }, [search, selectedBrand, sortBy]);
+  }, [products, search, selectedBrand, selectedCategory, sortBy]);
 
   return (
     <div className="min-h-screen bg-surface pt-24 pb-16">
@@ -63,10 +96,45 @@ export function Component() {
             Tất cả sản phẩm
           </h1>
           <p className="mt-2 text-text-secondary">
-            Khám phá {allProducts.length}+ điện thoại từ các thương hiệu hàng
-            đầu
+            Khám phá {products.length}+ điện thoại từ các thương hiệu hàng đầu
           </p>
         </motion.div>
+
+        {/* Category tabs */}
+        {categories.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mb-6 flex flex-wrap gap-2"
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('')}
+              className={`cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                selectedCategory === ''
+                  ? 'bg-brand text-white shadow-md'
+                  : 'bg-surface border border-border text-text-secondary hover:border-brand hover:text-brand'
+              }`}
+            >
+              Tất cả danh mục
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-brand text-white shadow-md'
+                    : 'bg-surface border border-border text-text-secondary hover:border-brand hover:text-brand'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </motion.div>
+        )}
 
         {/* Search & Filters */}
         <motion.div
@@ -158,6 +226,15 @@ export function Component() {
         {/* Results count */}
         <p className="mb-6 text-sm text-text-muted">
           Hiển thị {filtered.length} sản phẩm
+          {selectedCategory && (
+            <span>
+              {' '}
+              · Danh mục:{' '}
+              <span className="font-medium text-brand-accent">
+                {categories.find((c) => c.id === selectedCategory)?.name}
+              </span>
+            </span>
+          )}
           {selectedBrand !== 'Tất cả' && (
             <span>
               {' '}
@@ -170,7 +247,11 @@ export function Component() {
         </p>
 
         {/* Product grid */}
-        {filtered.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-24 text-text-muted">
+            Đang tải sản phẩm...
+          </div>
+        ) : filtered.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((product, index) => (
               <ProductCard key={product.id} product={product} index={index} />

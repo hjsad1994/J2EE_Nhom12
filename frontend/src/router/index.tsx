@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router';
 import App from '@/App';
+import AdminRoute from '@/components/routes/AdminRoute';
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +42,20 @@ export const router = createBrowserRouter([
       {
         path: 'checkout/success',
         lazy: () => import('@/pages/CheckoutSuccess'),
+      },
+      {
+        path: 'checkout/result',
+        lazy: () => import('@/pages/CheckoutResult'),
+      },
+    ],
+  },
+  {
+    path: '/admin',
+    Component: AdminRoute,
+    children: [
+      {
+        index: true,
+        lazy: () => import('@/pages/admin/Dashboard'),
       },
     ],
   },
