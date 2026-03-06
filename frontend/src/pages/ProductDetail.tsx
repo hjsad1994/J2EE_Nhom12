@@ -107,7 +107,8 @@ export function Component() {
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setReviewError(
-        axiosErr.response?.data?.message ?? 'Không thể gửi đánh giá, thử lại sau',
+        axiosErr.response?.data?.message ??
+          'Không thể gửi đánh giá, thử lại sau',
       );
     } finally {
       setReviewSubmitting(false);
@@ -490,7 +491,10 @@ export function Component() {
           {!isLoggedIn && (
             <div className="mb-8 rounded-2xl border border-border bg-surface-alt px-6 py-5 text-center">
               <p className="text-sm text-text-secondary">
-                <Link to="/login" className="font-medium text-brand hover:underline">
+                <Link
+                  to="/login"
+                  className="font-medium text-brand hover:underline"
+                >
                   Đăng nhập
                 </Link>{' '}
                 để viết đánh giá sản phẩm.

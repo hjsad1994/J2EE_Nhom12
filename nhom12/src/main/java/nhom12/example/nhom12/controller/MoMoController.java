@@ -7,13 +7,13 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nhom12.example.nhom12.dto.response.ApiResponse;
-import org.springframework.beans.factory.annotation.Value;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Order;
 import nhom12.example.nhom12.model.User;
 import nhom12.example.nhom12.repository.OrderRepository;
 import nhom12.example.nhom12.repository.UserRepository;
 import nhom12.example.nhom12.service.MoMoService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -103,8 +103,7 @@ public class MoMoController {
     boolean valid = moMoService.verifySignature(mutableParams, signature);
     if (!valid) {
       log.error("[MoMo] Invalid signature on return callback for orderId={}", orderId);
-      response.sendRedirect(
-          frontendUrl + "/checkout/result?success=false&error=invalid_signature");
+      response.sendRedirect(frontendUrl + "/checkout/result?success=false&error=invalid_signature");
       return;
     }
 

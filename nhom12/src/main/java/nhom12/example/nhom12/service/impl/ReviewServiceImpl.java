@@ -28,8 +28,7 @@ public class ReviewServiceImpl implements ReviewService {
   }
 
   @Override
-  public ReviewResponse createReview(
-      String userId, String username, CreateReviewRequest request) {
+  public ReviewResponse createReview(String userId, String username, CreateReviewRequest request) {
     if (!productRepository.existsById(request.getProductId())) {
       throw new ResourceNotFoundException("Product", "id", request.getProductId());
     }

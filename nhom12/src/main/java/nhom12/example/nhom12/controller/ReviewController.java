@@ -44,8 +44,7 @@ public class ReviewController {
       @AuthenticationPrincipal UserDetails principal,
       @Valid @RequestBody CreateReviewRequest request) {
     User user = resolveUser(principal);
-    ReviewResponse review =
-        reviewService.createReview(user.getId(), user.getUsername(), request);
+    ReviewResponse review = reviewService.createReview(user.getId(), user.getUsername(), request);
     return new ResponseEntity<>(
         ApiResponse.created(review, "Review created successfully"), HttpStatus.CREATED);
   }
@@ -62,7 +61,6 @@ public class ReviewController {
     return userRepository
         .findByUsername(principal.getUsername())
         .orElseThrow(
-            () ->
-                new ResourceNotFoundException("User", "username", principal.getUsername()));
+            () -> new ResourceNotFoundException("User", "username", principal.getUsername()));
   }
 }

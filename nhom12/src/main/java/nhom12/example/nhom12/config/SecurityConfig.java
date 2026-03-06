@@ -57,8 +57,7 @@ public class SecurityConfig {
         .oauth2Login(
             oauth2 ->
                 oauth2
-                    .userInfoEndpoint(
-                        userInfo -> userInfo.userService(customOAuth2UserService))
+                    .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                     .successHandler(oAuth2AuthenticationSuccessHandler)
                     .failureUrl("http://localhost:5173/login?error=google_failed"))
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -81,5 +80,4 @@ public class SecurityConfig {
     source.registerCorsConfiguration("/**", configuration);
     return source;
   }
-
 }

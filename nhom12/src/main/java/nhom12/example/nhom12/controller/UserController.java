@@ -82,9 +82,7 @@ public class UserController {
         userRepository
             .findByUsername(principal.getUsername())
             .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "User", "username", principal.getUsername()));
+                () -> new ResourceNotFoundException("User", "username", principal.getUsername()));
     return user.getId();
   }
 }

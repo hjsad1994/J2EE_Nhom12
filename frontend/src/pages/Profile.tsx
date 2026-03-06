@@ -91,7 +91,8 @@ function Profile() {
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setPasswordError(
-        axiosErr.response?.data?.message ?? 'Đổi mật khẩu thất bại, thử lại sau',
+        axiosErr.response?.data?.message ??
+          'Đổi mật khẩu thất bại, thử lại sau',
       );
     } finally {
       setPasswordLoading(false);
@@ -183,16 +184,22 @@ function Profile() {
                     { label: 'Email', value: profile?.email },
                     {
                       label: 'Vai trò',
-                      value: profile?.role === 'ADMIN' ? 'Quản trị viên' : 'Khách hàng',
+                      value:
+                        profile?.role === 'ADMIN'
+                          ? 'Quản trị viên'
+                          : 'Khách hàng',
                     },
                     {
                       label: 'Ngày tham gia',
                       value: profile?.createdAt
-                        ? new Date(profile.createdAt).toLocaleDateString('vi-VN', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })
+                        ? new Date(profile.createdAt).toLocaleDateString(
+                            'vi-VN',
+                            {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            },
+                          )
                         : '—',
                     },
                   ].map((item) => (
@@ -337,7 +344,9 @@ function Profile() {
                           {ORDER_STATUS_LABEL[order.status]}
                         </span>
                         <span className="text-sm text-text-secondary">
-                          {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                          {new Date(order.createdAt).toLocaleDateString(
+                            'vi-VN',
+                          )}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
@@ -386,8 +395,8 @@ function Profile() {
                                   Địa chỉ:{' '}
                                 </span>
                                 <span className="font-medium text-text-primary">
-                                  {order.address}, {order.ward}, {order.district},{' '}
-                                  {order.city}
+                                  {order.address}, {order.ward},{' '}
+                                  {order.district}, {order.city}
                                 </span>
                               </div>
                               <div>
@@ -431,9 +440,9 @@ function Profile() {
                                     </p>
                                   </div>
                                   <span className="shrink-0 text-sm font-semibold text-text-primary">
-                                    {(item.price * item.quantity).toLocaleString(
-                                      'vi-VN',
-                                    )}
+                                    {(
+                                      item.price * item.quantity
+                                    ).toLocaleString('vi-VN')}
                                     ₫
                                   </span>
                                 </div>
@@ -444,7 +453,9 @@ function Profile() {
                             <div className="mt-4 space-y-1 border-t border-border pt-4 text-sm">
                               <div className="flex justify-between text-text-secondary">
                                 <span>Tạm tính</span>
-                                <span>{order.subtotal.toLocaleString('vi-VN')}₫</span>
+                                <span>
+                                  {order.subtotal.toLocaleString('vi-VN')}₫
+                                </span>
                               </div>
                               <div className="flex justify-between text-text-secondary">
                                 <span>Phí vận chuyển</span>
