@@ -22,16 +22,18 @@ Nền tảng thương mại điện tử full-stack cho điện thoại di độ
 
 ## ✨ Tính Năng
 
-| Tính năng           | Mô tả                                                          |
-| ------------------- | -------------------------------------------------------------- |
-| Đăng ký / Đăng nhập | Xác thực người dùng với Spring Security                        |
-| Danh mục sản phẩm   | Duyệt, tìm kiếm và lọc điện thoại                              |
-| Giỏ hàng            | Thêm, xóa, cập nhật số lượng sản phẩm                          |
-| Danh sách yêu thích | Lưu sản phẩm yêu thích để xem lại sau                          |
-| Thanh toán          | Quy trình đặt hàng và lịch sử đơn hàng                         |
-| Đánh giá sản phẩm   | Khách hàng đánh giá sao và viết nhận xét                       |
-| Phân tích cảm xúc   | Phân loại cảm xúc theo khía cạnh (pin, camera, hiệu năng, ...) |
-| Quản trị            | Dashboard quản lý sản phẩm và đơn hàng                         |
+| Tính năng              | Mô tả                                                           |
+| ---------------------- | --------------------------------------------------------------- |
+| Đăng ký / Đăng nhập   | Xác thực bằng username/password với JWT                         |
+| Đăng nhập Google       | OAuth2 qua Google, tự động tạo tài khoản                        |
+| Danh mục sản phẩm      | Duyệt, tìm kiếm và lọc điện thoại theo category/brand          |
+| Chi tiết sản phẩm      | Ảnh, giá, thông số kỹ thuật, sản phẩm liên quan                 |
+| Giỏ hàng               | Thêm, xóa, cập nhật số lượng, tính phí ship tự động            |
+| Danh sách yêu thích    | Toggle yêu thích, đồng bộ server khi đã đăng nhập              |
+| Đặt hàng & Thanh toán  | COD hoặc MoMo (sandbox), điền địa chỉ giao hàng                 |
+| Đánh giá sản phẩm      | Viết đánh giá sao, xóa đánh giá của mình, rating tự cập nhật   |
+| Hồ sơ cá nhân          | Xem thông tin, đổi mật khẩu, xem lịch sử đơn hàng              |
+| Quản trị               | Dashboard quản lý sản phẩm và đơn hàng (role ADMIN)            |
 
 ---
 
@@ -111,12 +113,13 @@ java_cuoi_ki/
 
 ## 📌 Yêu Cầu Hệ Thống
 
-| Yêu cầu | Phiên bản   |
-| ------- | ----------- |
-| Node.js | 22 trở lên  |
-| Java    | 25 trở lên  |
-| MongoDB | 7.x trở lên |
-| npm     | 10 trở lên  |
+| Yêu cầu | Phiên bản  |
+| ------- | ---------- |
+| Node.js | 18 trở lên |
+| Java    | 21 trở lên |
+| npm     | 9 trở lên  |
+
+> **Không cần cài MongoDB** — dự án dùng MongoDB Atlas (cloud), đã cấu hình sẵn.
 
 ---
 
@@ -129,34 +132,60 @@ git clone https://github.com/hjsad1994/J2EE_Nhom12.git
 cd J2EE_Nhom12
 ```
 
-### 2. Cài đặt & chạy Backend
+### 2. Chạy Backend
 
 ```bash
 cd nhom12
+```
 
-# Chạy server (cổng 8080)
+Cần set 2 biến môi trường cho Google OAuth2 (lấy từ Google Cloud Console):
+
+**Windows CMD:**
+```cmd
+set GOOGLE_CLIENT_ID=your_client_id
+set GOOGLE_CLIENT_SECRET=your_client_secret
+mvnw spring-boot:run
+```
+
+**Windows PowerShell:**
+```powershell
+$env:GOOGLE_CLIENT_ID="your_client_id"
+$env:GOOGLE_CLIENT_SECRET="your_client_secret"
 ./mvnw spring-boot:run
 ```
 
-> Đảm bảo MongoDB đang chạy trước khi khởi động backend.
-> Cấu hình kết nối MongoDB tại `nhom12/src/main/resources/application.properties`.
+**Linux / macOS:**
+```bash
+GOOGLE_CLIENT_ID=your_client_id GOOGLE_CLIENT_SECRET=your_client_secret ./mvnw spring-boot:run
+```
 
-### 3. Cài đặt & chạy Frontend
+> Nếu không cần tính năng đăng nhập Google, bỏ qua biến môi trường và chạy thẳng `./mvnw spring-boot:run`.
+
+### 3. Chạy Frontend
+
+Mở terminal mới:
 
 ```bash
 cd frontend
-
-# Cài đặt dependencies
 npm install
-
-# Chạy dev server (cổng 5173, proxy /api → localhost:8080)
 npm run dev
 ```
 
 ### 4. Truy cập ứng dụng
 
-- **Frontend:** [http://localhost:5173](http://localhost:5173)
-- **Backend API:** [http://localhost:8080/api](http://localhost:8080/api)
+| URL | Mô tả |
+| --- | ----- |
+| http://localhost:5173 | Trang web chính |
+| http://localhost:5173/login | Đăng nhập / Đăng ký |
+| http://localhost:5173/admin | Trang quản trị (cần role ADMIN) |
+| http://localhost:8080/api | Backend API |
+
+### 5. Tạo tài khoản Admin
+
+1. Đăng ký tài khoản thường tại `/login`
+2. Vào **MongoDB Atlas** → cluster → collection `users`
+3. Tìm user vừa tạo → đổi field `role` từ `USER` thành `ADMIN`
+4. Đăng nhập lại → tự động redirect vào `/admin`
 
 ---
 
@@ -184,14 +213,59 @@ npm run dev
 
 ## 🔌 API Endpoints
 
-### Người dùng
+### Auth (public)
 
-| Method | Endpoint          | Mô tả                    |
-| ------ | ----------------- | ------------------------ |
-| POST   | `/api/users`      | Tạo tài khoản mới        |
-| GET    | `/api/users/{id}` | Lấy thông tin người dùng |
+| Method | Endpoint              | Mô tả                |
+| ------ | --------------------- | -------------------- |
+| POST   | `/api/auth/register`  | Đăng ký tài khoản    |
+| POST   | `/api/auth/login`     | Đăng nhập, nhận JWT  |
+| GET    | `/oauth2/authorization/google` | Đăng nhập Google |
 
-> Các endpoint khác sẽ được bổ sung trong các phase tiếp theo (sản phẩm, giỏ hàng, đơn hàng, đánh giá).
+### Sản phẩm & Danh mục (public)
+
+| Method | Endpoint                  | Mô tả                         |
+| ------ | ------------------------- | ----------------------------- |
+| GET    | `/api/products`           | Danh sách sản phẩm (phân trang) |
+| GET    | `/api/products/{id}`      | Chi tiết sản phẩm             |
+| GET    | `/api/categories`         | Danh sách danh mục            |
+
+### Đánh giá (GET public, POST/DELETE cần đăng nhập)
+
+| Method | Endpoint           | Mô tả                      |
+| ------ | ------------------ | -------------------------- |
+| GET    | `/api/reviews?productId=` | Đánh giá theo sản phẩm |
+| POST   | `/api/reviews`     | Tạo đánh giá               |
+| DELETE | `/api/reviews/{id}` | Xóa đánh giá của mình     |
+
+### Wishlist (cần đăng nhập)
+
+| Method | Endpoint                    | Mô tả                    |
+| ------ | --------------------------- | ------------------------ |
+| GET    | `/api/wishlist`             | Danh sách yêu thích      |
+| POST   | `/api/wishlist/{productId}` | Toggle thêm/bỏ yêu thích |
+| DELETE | `/api/wishlist`             | Xóa toàn bộ yêu thích    |
+
+### Đơn hàng (cần đăng nhập)
+
+| Method | Endpoint              | Mô tả                             |
+| ------ | --------------------- | --------------------------------- |
+| POST   | `/api/orders`         | Tạo đơn hàng mới                  |
+| GET    | `/api/orders/my`      | Lịch sử đơn hàng của mình         |
+| GET    | `/api/orders`         | Tất cả đơn hàng (chỉ ADMIN)       |
+| PATCH  | `/api/orders/{id}/status` | Cập nhật trạng thái (chỉ ADMIN) |
+
+### Thanh toán MoMo (cần đăng nhập)
+
+| Method | Endpoint                     | Mô tả                         |
+| ------ | ---------------------------- | ----------------------------- |
+| POST   | `/api/momo/create?orderId=`  | Tạo link thanh toán MoMo      |
+
+### Người dùng (cần đăng nhập)
+
+| Method | Endpoint                | Mô tả                    |
+| ------ | ----------------------- | ------------------------ |
+| GET    | `/api/users/me`         | Thông tin tài khoản      |
+| PUT    | `/api/users/me/password` | Đổi mật khẩu            |
 
 ---
 
