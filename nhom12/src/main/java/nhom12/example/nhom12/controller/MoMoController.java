@@ -7,6 +7,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nhom12.example.nhom12.dto.response.ApiResponse;
+import org.springframework.beans.factory.annotation.Value;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Order;
 import nhom12.example.nhom12.model.User;
@@ -27,8 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class MoMoController {
 
-  // Frontend base URL for redirects
-  private static final String FRONTEND_URL = "http://localhost:5173";
+  @Value("${app.frontend-url}")
+  private String frontendUrl;
 
   private final MoMoService moMoService;
   private final OrderRepository orderRepository;
@@ -103,7 +104,7 @@ public class MoMoController {
     if (!valid) {
       log.error("[MoMo] Invalid signature on return callback for orderId={}", orderId);
       response.sendRedirect(
-          FRONTEND_URL + "/checkout/result?success=false&error=invalid_signature");
+          frontendUrl + "/checkout/result?success=false&error=invalid_signature");
       return;
     }
 
@@ -121,7 +122,7 @@ public class MoMoController {
 
     boolean success = "0".equals(resultCode);
     response.sendRedirect(
-        FRONTEND_URL + "/checkout/result?success=" + success + "&orderId=" + orderId);
+        frontendUrl + "/checkout/result?success=" + success + "&orderId=" + orderId);
   }
 
   /**

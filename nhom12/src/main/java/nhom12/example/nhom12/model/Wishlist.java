@@ -1,33 +1,25 @@
 package nhom12.example.nhom12.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import nhom12.example.nhom12.model.enums.Role;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "users")
+@Document(collection = "wishlists")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class User extends BaseDocument {
+public class Wishlist extends BaseDocument {
 
   @Indexed(unique = true)
-  private String username;
+  private String userId;
 
-  @Indexed(unique = true)
-  private String email;
-
-  private String password;
-
-  @Indexed(sparse = true)
-  private String googleId;
-
-  @Builder.Default private Role role = Role.USER;
+  @lombok.Builder.Default private List<String> productIds = new ArrayList<>();
 }

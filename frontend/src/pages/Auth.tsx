@@ -6,6 +6,7 @@ import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
 import type { ApiResponse } from '@/api/types';
 import { useAuthStore, type AuthUser } from '@/store/useAuthStore';
+import { useWishlistStore } from '@/store/useWishlistStore';
 
 interface AuthResponse {
   token: string;
@@ -47,6 +48,7 @@ export function Component() {
       );
       const { token, ...user } = res.data.data;
       login(token, user as AuthUser);
+      useWishlistStore.getState().fetch();
       navigate(user.role === 'ADMIN' ? '/admin' : '/');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
@@ -279,7 +281,7 @@ export function Component() {
               type="button"
               className="btn-outline flex w-full cursor-pointer items-center justify-center gap-2 transition-all hover:bg-surface-alt"
               onClick={() => {
-                // TODO: Implement Google Sign-In
+                window.location.href = `${import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8080'}/oauth2/authorization/google`;
               }}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">

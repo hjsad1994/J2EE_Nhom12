@@ -24,4 +24,16 @@ export const ENDPOINTS = {
   MOMO: {
     CREATE: (orderId: string) => `/momo/create?orderId=${orderId}`,
   },
+  WISHLIST: {
+    BASE: '/wishlist',
+    TOGGLE: (productId: string) => `/wishlist/${productId}`,
+  },
+  REVIEWS: {
+    BASE: '/reviews',
+    BY_ID: (id: string) => `/reviews/${id}`,
+  },
+  USERS: {
+    ME: '/users/me',
+    CHANGE_PASSWORD: '/users/me/password',
+  },
 } as const;

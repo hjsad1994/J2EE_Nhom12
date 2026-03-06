@@ -32,6 +32,8 @@ export interface Order {
   shippingFee: number;
   total: number;
   createdAt: string;
+  paymentStatus?: string;
+  momoTransId?: string;
 }
 
 export interface CreateOrderPayload {

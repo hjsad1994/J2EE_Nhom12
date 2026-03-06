@@ -26,7 +26,8 @@ apiClient.interceptors.response.use(
   (error) => {
     // Handle global errors (401, 403, 500, etc.)
     if (error.response?.status === 401) {
-      // Handle unauthorized - redirect to login, clear token, etc.
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   },

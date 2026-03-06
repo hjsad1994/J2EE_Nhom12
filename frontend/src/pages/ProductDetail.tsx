@@ -2,10 +2,13 @@ import {
   ArrowLeft,
   Check,
   Heart,
+  Loader2,
   RotateCcw,
+  Send,
   Shield,
   ShoppingCart,
   Star,
+  Trash2,
   Truck,
 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -16,8 +19,10 @@ import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
 import type { ApiResponse, PaginatedResponse } from '@/api/types';
 import type { Product } from '@/types/product';
+import type { Review, CreateReviewPayload } from '@/types/review';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { useCartStore } from '@/store/useCartStore';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export function Component() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +33,18 @@ export function Component() {
   const toggleWishlist = useWishlistStore((s) => s.toggle);
   const isWishlisted = useWishlistStore((s) => s.has(product?.id ?? ''));
   const addToCart = useCartStore((s) => s.addItem);
+  const { isLoggedIn, user } = useAuthStore();
+
+  // Reviews state
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewHover, setReviewHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+
+  const myReview = reviews.find((r) => r.userId === user?.id);
 
   useEffect(() => {
     if (!id) return;
@@ -56,6 +73,55 @@ export function Component() {
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    setReviewsLoading(true);
+    apiClient
+      .get<ApiResponse<Review[]>>(ENDPOINTS.REVIEWS.BASE, {
+        params: { productId: id },
+      })
+      .then((res) => setReviews(res.data.data))
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoading(false));
+  }, [id]);
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+    setReviewError('');
+    setReviewSubmitting(true);
+    try {
+      const payload: CreateReviewPayload = {
+        productId: id,
+        rating: reviewRating,
+        comment: reviewComment,
+      };
+      const res = await apiClient.post<ApiResponse<Review>>(
+        ENDPOINTS.REVIEWS.BASE,
+        payload,
+      );
+      setReviews((prev) => [res.data.data, ...prev]);
+      setReviewComment('');
+      setReviewRating(5);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setReviewError(
+        axiosErr.response?.data?.message ?? 'Không thể gửi đánh giá, thử lại sau',
+      );
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await apiClient.delete(ENDPOINTS.REVIEWS.BY_ID(reviewId));
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    } catch {
+      // silent fail
+    }
+  };
 
   if (loading) {
     return (
@@ -168,7 +234,7 @@ export function Component() {
                 ))}
               </div>
               <span className="text-sm text-text-secondary">
-                {product.rating.toFixed(1)} · 128 đánh giá
+                {product.rating.toFixed(1)} · {reviews.length} đánh giá
               </span>
             </div>
 
@@ -330,6 +396,180 @@ export function Component() {
             </div>
           </motion.div>
         </div>
+
+        {/* Reviews Section */}
+        <section className="mt-20">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="font-display text-2xl font-bold text-brand">
+              Đánh giá sản phẩm
+            </h2>
+            <span className="text-sm text-text-secondary">
+              {reviews.length} đánh giá
+            </span>
+          </div>
+
+          {/* Submit form */}
+          {isLoggedIn && !myReview && (
+            <motion.form
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onSubmit={handleSubmitReview}
+              className="mb-8 rounded-2xl border border-border bg-surface p-6"
+            >
+              <p className="mb-4 font-medium text-text-primary">
+                Viết đánh giá của bạn
+              </p>
+
+              {/* Star selector */}
+              <div className="mb-4 flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewRating(star)}
+                    onMouseEnter={() => setReviewHover(star)}
+                    onMouseLeave={() => setReviewHover(0)}
+                    className="cursor-pointer p-0.5 transition-transform hover:scale-110"
+                    aria-label={`${star} sao`}
+                  >
+                    <Star
+                      className={`h-7 w-7 transition-colors ${
+                        star <= (reviewHover || reviewRating)
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'fill-transparent text-text-muted'
+                      }`}
+                    />
+                  </button>
+                ))}
+                <span className="ml-2 text-sm text-text-secondary">
+                  {reviewRating} / 5
+                </span>
+              </div>
+
+              {/* Comment textarea */}
+              <textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+                rows={3}
+                maxLength={1000}
+                required
+                className="w-full resize-none rounded-xl border border-border bg-surface-alt px-4 py-3 text-sm text-text-primary outline-none transition-colors placeholder:text-text-muted focus:border-brand focus:ring-1 focus:ring-brand"
+              />
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-xs text-text-muted">
+                  {reviewComment.length}/1000
+                </span>
+              </div>
+
+              {reviewError && (
+                <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                  {reviewError}
+                </p>
+              )}
+
+              <div className="mt-4 flex justify-end">
+                <motion.button
+                  type="submit"
+                  disabled={reviewSubmitting || !reviewComment.trim()}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="btn-primary flex cursor-pointer items-center gap-2 disabled:opacity-60"
+                >
+                  {reviewSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Gửi đánh giá
+                </motion.button>
+              </div>
+            </motion.form>
+          )}
+
+          {!isLoggedIn && (
+            <div className="mb-8 rounded-2xl border border-border bg-surface-alt px-6 py-5 text-center">
+              <p className="text-sm text-text-secondary">
+                <Link to="/login" className="font-medium text-brand hover:underline">
+                  Đăng nhập
+                </Link>{' '}
+                để viết đánh giá sản phẩm.
+              </p>
+            </div>
+          )}
+
+          {/* Reviews list */}
+          {reviewsLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="flex flex-col items-center py-12 text-center">
+              <Star className="h-10 w-10 text-text-muted" />
+              <p className="mt-3 text-text-secondary">
+                Chưa có đánh giá nào. Hãy là người đầu tiên!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <motion.div
+                  key={review.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl border border-border bg-surface p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/10 font-semibold text-brand">
+                        {review.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-text-primary">
+                          {review.username}
+                        </p>
+                        <p className="text-xs text-text-muted">
+                          {new Date(review.createdAt).toLocaleDateString(
+                            'vi-VN',
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-3.5 w-3.5 ${
+                              s <= review.rating
+                                ? 'fill-amber-400 text-amber-400'
+                                : 'fill-transparent text-text-muted'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      {review.userId === user?.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReview(review.id)}
+                          className="cursor-pointer rounded-lg p-1.5 text-text-muted transition-colors hover:bg-red-50 hover:text-red-500"
+                          aria-label="Xóa đánh giá"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-sm leading-relaxed text-text-secondary">
+                    {review.comment}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* Related products */}
         {related.length > 0 && (
