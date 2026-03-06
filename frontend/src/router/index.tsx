@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router';
 import App from '@/App';
 import AdminRoute from '@/components/routes/AdminRoute';
+import PrivateRoute from '@/components/routes/PrivateRoute';
 
 export const router = createBrowserRouter([
   {
@@ -46,6 +47,20 @@ export const router = createBrowserRouter([
       {
         path: 'checkout/result',
         lazy: () => import('@/pages/CheckoutResult'),
+      },
+      {
+        path: 'oauth2/callback',
+        lazy: () => import('@/pages/OAuth2Callback'),
+      },
+      {
+        path: 'profile',
+        Component: PrivateRoute,
+        children: [
+          {
+            index: true,
+            lazy: () => import('@/pages/Profile'),
+          },
+        ],
       },
     ],
   },

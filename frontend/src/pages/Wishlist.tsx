@@ -1,5 +1,6 @@
-import { Heart, Trash2 } from 'lucide-react';
+import { Heart, Loader2, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useEffect } from 'react';
 import { Link } from 'react-router';
 
 import ProductCard from '@/components/ui/ProductCard';
@@ -10,6 +11,20 @@ export const Component = Wishlist;
 function Wishlist() {
   const items = useWishlistStore((s) => s.items);
   const clear = useWishlistStore((s) => s.clear);
+  const fetch = useWishlistStore((s) => s.fetch);
+  const isLoading = useWishlistStore((s) => s.isLoading);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center pt-20 text-text-muted">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-24 lg:py-32">
@@ -29,7 +44,7 @@ function Wishlist() {
         {items.length > 0 && (
           <button
             type="button"
-            onClick={clear}
+            onClick={() => clear()}
             className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:border-red-500 hover:text-red-500"
           >
             <Trash2 className="h-4 w-4" />

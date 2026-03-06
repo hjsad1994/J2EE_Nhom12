@@ -1,33 +1,30 @@
 package nhom12.example.nhom12.model;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import nhom12.example.nhom12.model.enums.Role;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "users")
+@Document(collection = "reviews")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class User extends BaseDocument {
+@CompoundIndex(def = "{'userId': 1, 'productId': 1}", unique = true)
+public class Review extends BaseDocument {
 
-  @Indexed(unique = true)
+  @Indexed private String productId;
+
+  @Indexed private String userId;
+
   private String username;
 
-  @Indexed(unique = true)
-  private String email;
+  private int rating;
 
-  private String password;
-
-  @Indexed(sparse = true)
-  private String googleId;
-
-  @Builder.Default private Role role = Role.USER;
+  private String comment;
 }

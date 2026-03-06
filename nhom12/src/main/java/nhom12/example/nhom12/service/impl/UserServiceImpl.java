@@ -1,8 +1,10 @@
 package nhom12.example.nhom12.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import nhom12.example.nhom12.dto.request.ChangePasswordRequest;
 import nhom12.example.nhom12.dto.request.CreateUserRequest;
 import nhom12.example.nhom12.dto.response.UserResponse;
+import nhom12.example.nhom12.exception.BadRequestException;
 import nhom12.example.nhom12.exception.DuplicateResourceException;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.mapper.UserMapper;
@@ -44,6 +46,30 @@ public class UserServiceImpl implements UserService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
     return userMapper.toResponse(user);
+  }
+
+  @Override
+  public UserResponse getMyProfile(String userId) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+    return userMapper.toResponse(user);
+  }
+
+  @Override
+  public void changePassword(String userId, ChangePasswordRequest request) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+    if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+      throw new BadRequestException("Mật khẩu hiện tại không đúng");
+    }
+
+    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+    userRepository.save(user);
   }
 
   @Override
