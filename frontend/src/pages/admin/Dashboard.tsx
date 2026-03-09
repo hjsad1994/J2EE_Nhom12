@@ -26,6 +26,25 @@ import type { Order, OrderStatus } from '@/types/order';
 import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from '@/types/order';
 import { useAuthStore } from '@/store/useAuthStore';
 
+const TERMINAL_ORDER_STATUSES: ReadonlyArray<OrderStatus> = [
+  'DELIVERED',
+  'CANCELLED',
+];
+
+function getAllowedNextStatuses(status: OrderStatus): OrderStatus[] {
+  switch (status) {
+    case 'PENDING':
+      return ['CONFIRMED', 'CANCELLED'];
+    case 'CONFIRMED':
+      return ['SHIPPING', 'CANCELLED'];
+    case 'SHIPPING':
+      return ['DELIVERED', 'CANCELLED'];
+    case 'DELIVERED':
+    case 'CANCELLED':
+      return [];
+  }
+}
+
 interface UserItem {
   id: string;
   username: string;
@@ -731,11 +750,18 @@ export function Component() {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((o) => (
-                      <tr
-                        key={o.id}
-                        className="border-b border-border last:border-0 hover:bg-surface-alt"
-                      >
+                    {orders.map((o) => {
+                      const isTerminal = TERMINAL_ORDER_STATUSES.includes(o.status);
+                      const transitionOptions = [
+                        o.status,
+                        ...getAllowedNextStatuses(o.status),
+                      ].filter((value, index, arr) => arr.indexOf(value) === index);
+
+                      return (
+                        <tr
+                          key={o.id}
+                          className="border-b border-border last:border-0 hover:bg-surface-alt"
+                        >
                         <td className="px-4 py-3 font-mono text-xs text-text-muted">
                           {o.id.slice(-8).toUpperCase()}
                         </td>
@@ -770,17 +796,19 @@ export function Component() {
                                 e.target.value as OrderStatus,
                               )
                             }
-                            className="cursor-pointer rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text-secondary outline-none"
+                            disabled={isTerminal}
+                            className="cursor-pointer rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text-secondary outline-none disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            <option value="PENDING">Chờ xác nhận</option>
-                            <option value="CONFIRMED">Đã xác nhận</option>
-                            <option value="SHIPPING">Đang giao</option>
-                            <option value="DELIVERED">Đã giao</option>
-                            <option value="CANCELLED">Đã hủy</option>
+                            {transitionOptions.map((status) => (
+                              <option key={status} value={status}>
+                                {ORDER_STATUS_LABEL[status]}
+                              </option>
+                            ))}
                           </select>
                         </td>
-                      </tr>
-                    ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

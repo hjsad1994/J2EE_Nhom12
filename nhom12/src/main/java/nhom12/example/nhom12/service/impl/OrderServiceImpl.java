@@ -107,8 +107,28 @@ public class OrderServiceImpl implements OrderService {
         orderRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
+
+    OrderStatus currentStatus = order.getStatus();
+    if (!canTransition(currentStatus, status)) {
+      throw new BadRequestException(
+          "Invalid order status transition: " + currentStatus + " -> " + status);
+    }
+
     order.setStatus(status);
     return toResponse(orderRepository.save(order));
+  }
+
+  private boolean canTransition(OrderStatus current, OrderStatus target) {
+    if (current == target) {
+      return true;
+    }
+
+    return switch (current) {
+      case PENDING -> target == OrderStatus.CONFIRMED || target == OrderStatus.CANCELLED;
+      case CONFIRMED -> target == OrderStatus.SHIPPING || target == OrderStatus.CANCELLED;
+      case SHIPPING -> target == OrderStatus.DELIVERED || target == OrderStatus.CANCELLED;
+      case DELIVERED, CANCELLED -> false;
+    };
   }
 
   private OrderResponse toResponse(Order o) {
