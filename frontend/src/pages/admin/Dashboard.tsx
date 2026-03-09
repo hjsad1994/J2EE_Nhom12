@@ -34,6 +34,19 @@ interface UserItem {
   createdAt: string;
 }
 
+interface CategoryDeleteDialogState {
+  open: boolean;
+  categoryId: string | null;
+  categoryName: string;
+  productCount: number;
+  deleting: boolean;
+}
+
+interface ProductCategoryFilter {
+  categoryId: string;
+  categoryName: string;
+}
+
 const emptyProductForm: CreateProductPayload = {
   name: '',
   brand: '',
@@ -70,6 +83,8 @@ export function Component() {
   const [productForm, setProductForm] =
     useState<CreateProductPayload>(emptyProductForm);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [productCategoryFilter, setProductCategoryFilter] =
+    useState<ProductCategoryFilter | null>(null);
 
   // Categories
   const [categories, setCategories] = useState<Category[]>([]);
@@ -79,6 +94,14 @@ export function Component() {
   const [categoryForm, setCategoryForm] =
     useState<CreateCategoryPayload>(emptyCategoryForm);
   const [savingCategory, setSavingCategory] = useState(false);
+  const [categoryDeleteDialog, setCategoryDeleteDialog] =
+    useState<CategoryDeleteDialogState>({
+      open: false,
+      categoryId: null,
+      categoryName: '',
+      productCount: 0,
+      deleting: false,
+    });
 
   // Orders
   const [orders, setOrders] = useState<Order[]>([]);
@@ -222,10 +245,50 @@ export function Component() {
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (!window.confirm('Xác nhận xóa danh mục này?')) return;
-    await apiClient.delete(ENDPOINTS.CATEGORIES.BY_ID(id));
-    fetchCategories();
+  const handleDeleteCategory = async (id: string, name: string) => {
+    const categoryProductCount = await apiClient
+      .get<ApiResponse<PaginatedResponse<Product>>>(ENDPOINTS.PRODUCTS.BASE, {
+        params: {
+          categoryId: id,
+          page: 0,
+          size: 1,
+        },
+      })
+      .then((res) => res.data.data.totalElements)
+      .catch(() => products.filter((p) => p.categoryId === id).length);
+
+    setCategoryDeleteDialog({
+      open: true,
+      categoryId: id,
+      categoryName: name,
+      productCount: categoryProductCount,
+      deleting: false,
+    });
+  };
+
+  const closeDeleteCategoryDialog = () => {
+    setCategoryDeleteDialog((prev) => ({
+      ...prev,
+      open: false,
+      categoryId: null,
+      categoryName: '',
+      productCount: 0,
+    }));
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryDeleteDialog.categoryId) return;
+    setCategoryDeleteDialog((prev) => ({ ...prev, deleting: true }));
+    try {
+      await apiClient.delete(
+        ENDPOINTS.CATEGORIES.BY_ID(categoryDeleteDialog.categoryId),
+      );
+      closeDeleteCategoryDialog();
+      fetchCategories();
+      fetchProducts();
+    } finally {
+      setCategoryDeleteDialog((prev) => ({ ...prev, deleting: false }));
+    }
   };
 
   const handleUpdateOrderStatus = async (id: string, status: OrderStatus) => {
@@ -236,6 +299,19 @@ export function Component() {
   };
 
   const userCount = users.filter((u) => u.role === 'USER').length;
+  const displayedProducts = productCategoryFilter
+    ? products.filter((p) => p.categoryId === productCategoryFilter.categoryId)
+    : products;
+
+  const handleViewCategoryProducts = () => {
+    if (!categoryDeleteDialog.categoryId) return;
+    setProductCategoryFilter({
+      categoryId: categoryDeleteDialog.categoryId,
+      categoryName: categoryDeleteDialog.categoryName,
+    });
+    setTab('products');
+    closeDeleteCategoryDialog();
+  };
 
   return (
     <div className="min-h-screen bg-surface-alt">
@@ -442,6 +518,23 @@ export function Component() {
                 <Plus className="h-4 w-4" /> Thêm sản phẩm
               </button>
             </div>
+            {productCategoryFilter && (
+              <div className="flex items-center justify-between border-b border-border bg-amber-50 px-6 py-3">
+                <p className="text-sm text-amber-800">
+                  Đang lọc theo danh mục:{' '}
+                  <span className="font-semibold">
+                    {productCategoryFilter.categoryName}
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setProductCategoryFilter(null)}
+                  className="cursor-pointer rounded-md border border-amber-200 bg-white px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
+                >
+                  Bỏ lọc
+                </button>
+              </div>
+            )}
             {loadingProducts ? (
               <div className="flex items-center justify-center py-16 text-text-muted">
                 Đang tải...
@@ -461,59 +554,70 @@ export function Component() {
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map((p) => (
-                      <tr
-                        key={p.id}
-                        className="border-b border-border last:border-0 hover:bg-surface-alt"
-                      >
-                        <td className="px-4 py-3">
-                          <img
-                            src={p.image}
-                            alt={p.name}
-                            className="h-12 w-12 rounded-lg object-contain bg-surface-alt"
-                          />
-                        </td>
-                        <td className="px-4 py-3 font-medium text-text-primary max-w-[160px] truncate">
-                          {p.name}
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary">
-                          {p.brand}
-                        </td>
-                        <td className="px-4 py-3">
-                          {p.categoryName ? (
-                            <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-medium text-brand">
-                              {p.categoryName}
-                            </span>
-                          ) : (
-                            <span className="text-text-muted">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-text-primary">
-                          {p.price.toLocaleString('vi-VN')}₫
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary">
-                          {p.rating}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openEditProduct(p)}
-                              className="flex cursor-pointer items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text-secondary hover:border-brand hover:text-brand"
-                            >
-                              <Pencil className="h-3 w-3" /> Sửa
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteProduct(p.id)}
-                              className="flex cursor-pointer items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text-secondary hover:border-red-300 hover:text-red-500"
-                            >
-                              <Trash2 className="h-3 w-3" /> Xóa
-                            </button>
-                          </div>
+                    {displayedProducts.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="px-4 py-10 text-center text-sm text-text-muted"
+                        >
+                          Không có sản phẩm phù hợp với bộ lọc hiện tại.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      displayedProducts.map((p) => (
+                        <tr
+                          key={p.id}
+                          className="border-b border-border last:border-0 hover:bg-surface-alt"
+                        >
+                          <td className="px-4 py-3">
+                            <img
+                              src={p.image}
+                              alt={p.name}
+                              className="h-12 w-12 rounded-lg object-contain bg-surface-alt"
+                            />
+                          </td>
+                          <td className="px-4 py-3 font-medium text-text-primary max-w-[160px] truncate">
+                            {p.name}
+                          </td>
+                          <td className="px-4 py-3 text-text-secondary">
+                            {p.brand}
+                          </td>
+                          <td className="px-4 py-3">
+                            {p.categoryName ? (
+                              <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-medium text-brand">
+                                {p.categoryName}
+                              </span>
+                            ) : (
+                              <span className="text-text-muted">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-text-primary">
+                            {p.price.toLocaleString('vi-VN')}₫
+                          </td>
+                          <td className="px-4 py-3 text-text-secondary">
+                            {p.rating}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditProduct(p)}
+                                className="flex cursor-pointer items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text-secondary hover:border-brand hover:text-brand"
+                              >
+                                <Pencil className="h-3 w-3" /> Sửa
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteProduct(p.id)}
+                                className="flex cursor-pointer items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text-secondary hover:border-red-300 hover:text-red-500"
+                              >
+                                <Trash2 className="h-3 w-3" /> Xóa
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -581,7 +685,7 @@ export function Component() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteCategory(c.id)}
+                              onClick={() => handleDeleteCategory(c.id, c.name)}
                               className="flex cursor-pointer items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text-secondary hover:border-red-300 hover:text-red-500"
                             >
                               <Trash2 className="h-3 w-3" /> Xóa
@@ -920,6 +1024,58 @@ export function Component() {
                   : editingCategory
                     ? 'Cập nhật'
                     : 'Tạo mới'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {categoryDeleteDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl">
+            <div className="text-center">
+              <p className="text-sm font-semibold text-amber-600">
+                Cảnh báo xóa danh mục
+              </p>
+              <h3 className="mt-2 font-display text-xl font-bold text-text-primary">
+                {categoryDeleteDialog.categoryName}
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-text-secondary">
+                Danh mục này đang được dùng bởi{' '}
+                {categoryDeleteDialog.productCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={handleViewCategoryProducts}
+                    className="cursor-pointer font-semibold text-amber-700 underline decoration-amber-500 underline-offset-2 hover:text-amber-800"
+                  >
+                    {categoryDeleteDialog.productCount} sản phẩm
+                  </button>
+                ) : (
+                  <span className="font-semibold text-amber-600">0 sản phẩm</span>
+                )}
+                .
+              </p>
+              <p className="mt-1 text-sm text-text-secondary">
+                Khi xóa, các sản phẩm này sẽ được gỡ khỏi danh mục.
+              </p>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteCategoryDialog}
+                disabled={categoryDeleteDialog.deleting}
+                className="flex-1 cursor-pointer rounded-lg border border-border py-2 text-sm text-text-secondary hover:text-brand disabled:opacity-60"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteCategory}
+                disabled={categoryDeleteDialog.deleting}
+                className="flex-1 cursor-pointer rounded-lg bg-red-500 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-60"
+              >
+                {categoryDeleteDialog.deleting ? 'Đang xóa...' : 'Xóa danh mục'}
               </button>
             </div>
           </div>

@@ -9,7 +9,9 @@ import nhom12.example.nhom12.dto.response.CategoryResponse;
 import nhom12.example.nhom12.exception.DuplicateResourceException;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Category;
+import nhom12.example.nhom12.model.Product;
 import nhom12.example.nhom12.repository.CategoryRepository;
+import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.service.CategoryService;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class CategoryServiceImpl implements CategoryService {
 
   private final CategoryRepository categoryRepository;
+  private final ProductRepository productRepository;
 
   @Override
   public List<CategoryResponse> getAllCategories() {
@@ -59,6 +62,13 @@ public class CategoryServiceImpl implements CategoryService {
     if (!categoryRepository.existsById(id)) {
       throw new ResourceNotFoundException("Category", "id", id);
     }
+
+    List<Product> products = productRepository.findAllByCategoryId(id);
+    if (!products.isEmpty()) {
+      products.forEach(product -> product.setCategoryId(null));
+      productRepository.saveAll(products);
+    }
+
     categoryRepository.deleteById(id);
   }
 
