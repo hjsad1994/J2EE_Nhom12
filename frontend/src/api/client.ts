@@ -42,9 +42,15 @@ apiClient.interceptors.response.use(
           const freshRole = res.data?.data?.role;
           if (freshRole && freshRole !== user.role) {
             useAuthStore.getState().syncRole(freshRole);
-            if (freshRole === 'USER' && window.location.pathname.startsWith('/admin')) {
+            if (
+              freshRole === 'USER' &&
+              window.location.pathname.startsWith('/admin')
+            ) {
               window.location.href = '/';
-            } else if (freshRole === 'ADMIN' && !window.location.pathname.startsWith('/admin')) {
+            } else if (
+              freshRole === 'ADMIN' &&
+              !window.location.pathname.startsWith('/admin')
+            ) {
               window.location.href = '/admin';
             }
           }

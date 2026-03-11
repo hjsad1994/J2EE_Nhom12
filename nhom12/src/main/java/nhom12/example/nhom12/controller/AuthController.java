@@ -53,17 +53,13 @@ public class AuthController {
   @PostMapping("/forgot-password")
   public ResponseEntity<ApiResponse<Void>> forgotPassword(
       @Valid @RequestBody ForgotPasswordRequest request) {
-    User user =
-        userRepository
-            .findByEmail(request.getEmail())
-            .orElse(null);
+    User user = userRepository.findByEmail(request.getEmail()).orElse(null);
 
     // Always return success to prevent email enumeration
     if (user == null) {
       return ResponseEntity.ok(
           ApiResponse.success(
-              null,
-              "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được link đặt lại mật khẩu"));
+              null, "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được link đặt lại mật khẩu"));
     }
 
     // Delete any existing tokens for this user
@@ -84,8 +80,7 @@ public class AuthController {
 
     return ResponseEntity.ok(
         ApiResponse.success(
-            null,
-            "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được link đặt lại mật khẩu"));
+            null, "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được link đặt lại mật khẩu"));
   }
 
   @PostMapping("/reset-password")

@@ -57,8 +57,7 @@ public class OrderServiceImpl implements OrderService {
                           .findById(i.getProductId())
                           .orElseThrow(
                               () ->
-                                  new ResourceNotFoundException(
-                                      "Product", "id", i.getProductId()));
+                                  new ResourceNotFoundException("Product", "id", i.getProductId()));
 
                   // Check stock availability
                   if (product.getStock() < i.getQuantity()) {
@@ -204,8 +203,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     // Allow cancellation of PENDING and CONFIRMED orders (not yet shipped)
-    if (order.getStatus() != OrderStatus.PENDING
-        && order.getStatus() != OrderStatus.CONFIRMED) {
+    if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.CONFIRMED) {
       throw new BadRequestException(
           "Chỉ có thể hủy đơn hàng chưa được giao cho đơn vị vận chuyển. "
               + "Trạng thái hiện tại: "

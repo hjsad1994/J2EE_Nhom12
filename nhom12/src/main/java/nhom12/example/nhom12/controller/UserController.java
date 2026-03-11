@@ -11,9 +11,9 @@ import nhom12.example.nhom12.dto.response.ApiResponse;
 import nhom12.example.nhom12.dto.response.UserResponse;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.User;
+import nhom12.example.nhom12.model.enums.Role;
 import nhom12.example.nhom12.repository.UserRepository;
 import nhom12.example.nhom12.service.UserService;
-import nhom12.example.nhom12.model.enums.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -72,8 +72,7 @@ public class UserController {
       @Valid @RequestBody SetupPasswordRequest request) {
     String userId = resolveUserId(principal);
     userService.setupPassword(userId, request);
-    return ResponseEntity.ok(
-        ApiResponse.success(null, "Password setup successfully"));
+    return ResponseEntity.ok(ApiResponse.success(null, "Password setup successfully"));
   }
 
   @GetMapping("/{id}")

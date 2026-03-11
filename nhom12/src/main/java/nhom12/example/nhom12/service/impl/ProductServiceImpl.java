@@ -83,8 +83,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     // Prevent deletion if product has active orders
-    List<Order> activeOrders =
-        orderRepository.findByProductIdAndStatusIn(id, ACTIVE_STATUSES);
+    List<Order> activeOrders = orderRepository.findByProductIdAndStatusIn(id, ACTIVE_STATUSES);
     if (!activeOrders.isEmpty()) {
       throw new BadRequestException(
           "Không thể xóa sản phẩm này vì đang có "

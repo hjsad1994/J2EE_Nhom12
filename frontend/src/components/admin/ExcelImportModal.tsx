@@ -46,23 +46,36 @@ const EXCEL_COLUMNS = [
 ] as const;
 
 /** Validate một row từ Excel */
-function validateRow(
-  row: Record<string, unknown>,
-  index: number,
-): RowError[] {
+function validateRow(row: Record<string, unknown>, index: number): RowError[] {
   const errors: RowError[] = [];
   if (!row.name || String(row.name).trim() === '') {
-    errors.push({ row: index + 2, field: 'name', message: 'Tên sản phẩm không được để trống' });
+    errors.push({
+      row: index + 2,
+      field: 'name',
+      message: 'Tên sản phẩm không được để trống',
+    });
   }
   if (!row.brand || String(row.brand).trim() === '') {
-    errors.push({ row: index + 2, field: 'brand', message: 'Thương hiệu không được để trống' });
+    errors.push({
+      row: index + 2,
+      field: 'brand',
+      message: 'Thương hiệu không được để trống',
+    });
   }
   if (!row.image || String(row.image).trim() === '') {
-    errors.push({ row: index + 2, field: 'image', message: 'URL ảnh không được để trống' });
+    errors.push({
+      row: index + 2,
+      field: 'image',
+      message: 'URL ảnh không được để trống',
+    });
   }
   const price = Number(row.price);
   if (isNaN(price) || price < 0) {
-    errors.push({ row: index + 2, field: 'price', message: 'Giá phải là số không âm' });
+    errors.push({
+      row: index + 2,
+      field: 'price',
+      message: 'Giá phải là số không âm',
+    });
   }
   return errors;
 }
@@ -112,8 +125,15 @@ function downloadTemplate() {
 
   // Đặt độ rộng cột
   ws['!cols'] = [
-    { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
-    { wch: 40 }, { wch: 20 }, { wch: 8 }, { wch: 10 }, { wch: 40 },
+    { wch: 30 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 40 },
+    { wch: 20 },
+    { wch: 8 },
+    { wch: 10 },
+    { wch: 40 },
   ];
 
   const wb = XLSX.utils.book_new();
@@ -185,7 +205,10 @@ export default function ExcelImportModal({ onClose, onSuccess }: Props) {
       });
       onSuccess();
     } catch {
-      setImportResult({ success: 0, message: 'Import thất bại, vui lòng thử lại.' });
+      setImportResult({
+        success: 0,
+        message: 'Import thất bại, vui lòng thử lại.',
+      });
     } finally {
       setImporting(false);
     }
@@ -351,7 +374,9 @@ export default function ExcelImportModal({ onClose, onSuccess }: Props) {
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-semibold text-gray-700">
                   Preview —{' '}
-                  <span className="text-purple-600">{rows.length} sản phẩm hợp lệ</span>
+                  <span className="text-purple-600">
+                    {rows.length} sản phẩm hợp lệ
+                  </span>
                 </p>
               </div>
               <div className="overflow-x-auto rounded-xl border border-gray-100">

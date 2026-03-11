@@ -500,7 +500,11 @@ export function Component() {
                       />
                       <button
                         type="button"
-                        onClick={() => setReviewImages((prev) => prev.filter((_, j) => j !== i))}
+                        onClick={() =>
+                          setReviewImages((prev) =>
+                            prev.filter((_, j) => j !== i),
+                          )
+                        }
                         className="absolute -right-1.5 -top-1.5 cursor-pointer rounded-full bg-red-500 p-0.5 text-white hover:bg-red-600"
                       >
                         <X className="h-3 w-3" />
@@ -520,7 +524,9 @@ export function Component() {
                       ) : (
                         <>
                           <Camera className="h-5 w-5 text-text-muted" />
-                          <span className="text-[10px] text-text-muted">Thêm ảnh</span>
+                          <span className="text-[10px] text-text-muted">
+                            Thêm ảnh
+                          </span>
                         </>
                       )}
                       <input
@@ -536,11 +542,13 @@ export function Component() {
                           try {
                             const formData = new FormData();
                             formData.append('file', file);
-                            const res = await apiClient.post<ApiResponse<string>>(
-                              ENDPOINTS.REVIEWS.UPLOAD_IMAGE,
-                              formData,
-                              { headers: { 'Content-Type': 'multipart/form-data' } },
-                            );
+                            const res = await apiClient.post<
+                              ApiResponse<string>
+                            >(ENDPOINTS.REVIEWS.UPLOAD_IMAGE, formData, {
+                              headers: {
+                                'Content-Type': 'multipart/form-data',
+                              },
+                            });
                             setReviewImages((prev) => [...prev, res.data.data]);
                           } catch {
                             setReviewError('Upload ảnh thất bại');
@@ -666,7 +674,12 @@ export function Component() {
                   {review.images && review.images.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {review.images.map((img, i) => (
-                        <a key={i} href={img} target="_blank" rel="noopener noreferrer">
+                        <a
+                          key={i}
+                          href={img}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           <img
                             src={img}
                             alt={`Review ảnh ${i + 1}`}

@@ -104,9 +104,7 @@ export function Component() {
                 disabled={loading}
                 className="btn-primary flex w-full cursor-pointer items-center justify-center gap-2 disabled:opacity-60"
               >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : null}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {loading ? 'Đang gửi...' : 'Gửi email đặt lại mật khẩu'}
               </button>
 

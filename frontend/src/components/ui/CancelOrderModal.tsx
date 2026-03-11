@@ -20,7 +20,9 @@ export default function CancelOrderModal({
 
   const finalReason =
     selectedReason === 'Khác' ? otherReason.trim() || 'Khác' : selectedReason;
-  const canSubmit = selectedReason !== '' && (selectedReason !== 'Khác' || otherReason.trim() !== '');
+  const canSubmit =
+    selectedReason !== '' &&
+    (selectedReason !== 'Khác' || otherReason.trim() !== '');
 
   const handleSubmit = async () => {
     if (!canSubmit) return;

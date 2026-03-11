@@ -40,8 +40,12 @@ export default function ToastContainer() {
               transition={{ duration: 0.25 }}
               className={`pointer-events-auto flex w-80 items-start gap-3 rounded-xl border px-4 py-3 shadow-lg ${STYLE_MAP[toast.type]}`}
             >
-              <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${ICON_COLOR_MAP[toast.type]}`} />
-              <p className="flex-1 text-sm font-medium leading-snug">{toast.message}</p>
+              <Icon
+                className={`mt-0.5 h-5 w-5 shrink-0 ${ICON_COLOR_MAP[toast.type]}`}
+              />
+              <p className="flex-1 text-sm font-medium leading-snug">
+                {toast.message}
+              </p>
               <button
                 type="button"
                 onClick={() => removeToast(toast.id)}

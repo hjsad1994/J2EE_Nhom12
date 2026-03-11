@@ -94,14 +94,13 @@ const emptyCategoryForm: CreateCategoryPayload = {
 
 type Tab = 'overview' | 'users' | 'products' | 'categories' | 'orders';
 
-const NAV_ITEMS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] =
-  [
-    { key: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
-    { key: 'users', label: 'Người dùng', icon: Users },
-    { key: 'products', label: 'Sản phẩm', icon: Package },
-    { key: 'categories', label: 'Danh mục', icon: Tag },
-    { key: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
-  ];
+const NAV_ITEMS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+  { key: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
+  { key: 'users', label: 'Người dùng', icon: Users },
+  { key: 'products', label: 'Sản phẩm', icon: Package },
+  { key: 'categories', label: 'Danh mục', icon: Tag },
+  { key: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
+];
 
 export function Component() {
   const [tab, setTab] = useState<Tab>('overview');
@@ -221,7 +220,10 @@ export function Component() {
         categoryId: productForm.categoryId || undefined,
       };
       if (editingProduct) {
-        await apiClient.put(ENDPOINTS.PRODUCTS.BY_ID(editingProduct.id), payload);
+        await apiClient.put(
+          ENDPOINTS.PRODUCTS.BY_ID(editingProduct.id),
+          payload,
+        );
       } else {
         await apiClient.post(ENDPOINTS.PRODUCTS.BASE, payload);
       }
@@ -243,15 +245,14 @@ export function Component() {
       const res = await apiClient.post<ApiResponse<string>>(
         ENDPOINTS.UPLOAD.IMAGE,
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { headers: { 'Content-Type': 'multipart/form-data' } },
       );
       const url = res.data.data;
       setProductForm((prev) => ({ ...prev, image: url }));
       addToast('success', 'Upload ảnh thành công');
     } catch (err: unknown) {
       const axiosErr = err as ApiError;
-      const msg =
-        axiosErr.response?.data?.message || 'Upload ảnh thất bại';
+      const msg = axiosErr.response?.data?.message || 'Upload ảnh thất bại';
       addToast('error', msg);
     } finally {
       setUploadingImage(false);
@@ -266,8 +267,7 @@ export function Component() {
       addToast('success', 'Đã xóa sản phẩm');
     } catch (err: unknown) {
       const axiosErr = err as ApiError;
-      const msg =
-        axiosErr.response?.data?.message || 'Không thể xóa sản phẩm.';
+      const msg = axiosErr.response?.data?.message || 'Không thể xóa sản phẩm.';
       addToast('error', msg);
     }
   };
@@ -293,7 +293,10 @@ export function Component() {
     setSavingCategory(true);
     try {
       if (editingCategory) {
-        await apiClient.put(ENDPOINTS.CATEGORIES.BY_ID(editingCategory.id), categoryForm);
+        await apiClient.put(
+          ENDPOINTS.CATEGORIES.BY_ID(editingCategory.id),
+          categoryForm,
+        );
       } else {
         await apiClient.post(ENDPOINTS.CATEGORIES.BASE, categoryForm);
       }
@@ -314,7 +317,7 @@ export function Component() {
         const action = window.confirm(
           `Danh mục "${category.name}" đang có ${category.productCount} sản phẩm.\n\n` +
             'Bấm OK để xóa danh mục và gỡ liên kết khỏi các sản phẩm.\n' +
-            'Bấm Cancel để hủy.'
+            'Bấm Cancel để hủy.',
         );
         if (!action) return;
         // Admin chose force delete
@@ -332,17 +335,21 @@ export function Component() {
       addToast('success', `Đã xóa danh mục "${category.name}"`);
     } catch (err: unknown) {
       const axiosErr = err as ApiError;
-      const msg =
-        axiosErr.response?.data?.message || 'Không thể xóa danh mục.';
+      const msg = axiosErr.response?.data?.message || 'Không thể xóa danh mục.';
       addToast('error', msg);
     }
   };
 
   const handleUpdateOrderStatus = async (id: string, status: OrderStatus) => {
     try {
-      await apiClient.patch(ENDPOINTS.ORDERS.STATUS(id), null, { params: { status } });
+      await apiClient.patch(ENDPOINTS.ORDERS.STATUS(id), null, {
+        params: { status },
+      });
       fetchOrders();
-      addToast('success', `Đã cập nhật trạng thái đơn hàng thành "${ORDER_STATUS_LABEL[status]}"`);
+      addToast(
+        'success',
+        `Đã cập nhật trạng thái đơn hàng thành "${ORDER_STATUS_LABEL[status]}"`,
+      );
     } catch (err: unknown) {
       const axiosErr = err as ApiError;
       const msg =
@@ -360,12 +367,7 @@ export function Component() {
   ) => {
     const newRole = currentRole === 'USER' ? 'ADMIN' : 'USER';
     const label = newRole === 'ADMIN' ? 'ADMIN' : 'USER';
-    if (
-      !window.confirm(
-        `Chuyển quyền tài khoản này thành ${label}?`,
-      )
-    )
-      return;
+    if (!window.confirm(`Chuyển quyền tài khoản này thành ${label}?`)) return;
     try {
       await apiClient.patch(`/users/${userId}/role`, null, {
         params: { role: newRole },
@@ -421,29 +423,30 @@ export function Component() {
     };
   });
   const topSellingProducts = Object.values(
-    orders.reduce<Record<string, { name: string; sold: number; revenue: number }>>(
-      (acc, order) => {
-        order.items.forEach((item) => {
-          const existing = acc[item.productId] ?? {
-            name: item.productName,
-            sold: 0,
-            revenue: 0,
-          };
-          existing.sold += item.quantity;
-          existing.revenue += item.quantity * item.price;
-          acc[item.productId] = existing;
-        });
-        return acc;
-      },
-      {},
-    ),
+    orders.reduce<
+      Record<string, { name: string; sold: number; revenue: number }>
+    >((acc, order) => {
+      order.items.forEach((item) => {
+        const existing = acc[item.productId] ?? {
+          name: item.productName,
+          sold: 0,
+          revenue: 0,
+        };
+        existing.sold += item.quantity;
+        existing.revenue += item.quantity * item.price;
+        acc[item.productId] = existing;
+      });
+      return acc;
+    }, {}),
   )
     .sort((a, b) => b.sold - a.sold)
     .slice(0, 5)
     .map((item) => ({
       ...item,
       shortName:
-        item.name.length > 18 ? item.name.slice(0, 18).trimEnd() + '…' : item.name,
+        item.name.length > 18
+          ? item.name.slice(0, 18).trimEnd() + '…'
+          : item.name,
     }));
   const orderStatusData = [
     {
@@ -463,7 +466,10 @@ export function Component() {
     },
     {
       name: 'Khác',
-      value: Math.max(orders.length - deliveredOrders - pendingOrders - cancelledOrders, 0),
+      value: Math.max(
+        orders.length - deliveredOrders - pendingOrders - cancelledOrders,
+        0,
+      ),
       color: '#6366f1',
     },
   ].filter((item) => item.value > 0);
@@ -627,7 +633,6 @@ export function Component() {
         </header>
 
         <main className="p-6">
-
           {/* ── Overview ── */}
           {tab === 'overview' && (
             <div className="space-y-6">
@@ -681,7 +686,9 @@ export function Component() {
                 <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
                   <div className="mb-5 flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="font-bold text-gray-800">Doanh thu 7 ngày gần nhất</h3>
+                      <h3 className="font-bold text-gray-800">
+                        Doanh thu 7 ngày gần nhất
+                      </h3>
                       <p className="mt-1 text-xs text-gray-400">
                         Theo ngày tạo đơn hàng
                       </p>
@@ -699,11 +706,17 @@ export function Component() {
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={revenueByDay}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#eef2ff" />
-                        <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                        <XAxis
+                          dataKey="label"
+                          tickLine={false}
+                          axisLine={false}
+                        />
                         <YAxis
                           tickLine={false}
                           axisLine={false}
-                          tickFormatter={(value) => `${Math.round(value / 1000)}k`}
+                          tickFormatter={(value) =>
+                            `${Math.round(value / 1000)}k`
+                          }
                         />
                         <Tooltip
                           formatter={(value) =>
@@ -726,7 +739,9 @@ export function Component() {
 
                 <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
                   <div className="mb-5">
-                    <h3 className="font-bold text-gray-800">Tỷ trọng trạng thái đơn</h3>
+                    <h3 className="font-bold text-gray-800">
+                      Tỷ trọng trạng thái đơn
+                    </h3>
                     <p className="mt-1 text-xs text-gray-400">
                       Theo toàn bộ đơn hiện có
                     </p>
@@ -759,7 +774,9 @@ export function Component() {
               <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.3fr_1fr]">
                 <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
                   <div className="mb-5">
-                    <h3 className="font-bold text-gray-800">Doanh thu theo tháng</h3>
+                    <h3 className="font-bold text-gray-800">
+                      Doanh thu theo tháng
+                    </h3>
                     <p className="mt-1 text-xs text-gray-400">
                       6 tháng gần nhất
                     </p>
@@ -767,12 +784,22 @@ export function Component() {
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={revenueByMonth} barSize={28}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                        <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#f3f4f6"
+                        />
+                        <XAxis
+                          dataKey="label"
+                          tickLine={false}
+                          axisLine={false}
+                        />
                         <YAxis
                           tickLine={false}
                           axisLine={false}
-                          tickFormatter={(value) => `${Math.round(value / 1000)}k`}
+                          tickFormatter={(value) =>
+                            `${Math.round(value / 1000)}k`
+                          }
                         />
                         <Tooltip
                           formatter={(value) =>
@@ -780,7 +807,11 @@ export function Component() {
                           }
                           labelFormatter={(label) => `Tháng ${label}`}
                         />
-                        <Bar dataKey="revenue" radius={[10, 10, 0, 0]} fill="#8b5cf6" />
+                        <Bar
+                          dataKey="revenue"
+                          radius={[10, 10, 0, 0]}
+                          fill="#8b5cf6"
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -788,7 +819,9 @@ export function Component() {
 
                 <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
                   <div className="mb-5">
-                    <h3 className="font-bold text-gray-800">Top sản phẩm bán chạy</h3>
+                    <h3 className="font-bold text-gray-800">
+                      Top sản phẩm bán chạy
+                    </h3>
                     <p className="mt-1 text-xs text-gray-400">
                       Theo số lượng đã bán
                     </p>
@@ -883,7 +916,9 @@ export function Component() {
           {tab === 'users' && (
             <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden">
               <div className="border-b border-gray-100 px-6 py-5">
-                <h2 className="font-bold text-gray-800">Danh sách người dùng</h2>
+                <h2 className="font-bold text-gray-800">
+                  Danh sách người dùng
+                </h2>
                 <p className="mt-0.5 text-xs text-gray-400">
                   Tổng {totalUsers} tài khoản
                 </p>
@@ -938,7 +973,9 @@ export function Component() {
                           </td>
                           <td className="px-6 py-4 text-gray-400 text-xs">
                             {u.createdAt
-                              ? new Date(u.createdAt).toLocaleDateString('vi-VN')
+                              ? new Date(u.createdAt).toLocaleDateString(
+                                  'vi-VN',
+                                )
                               : '—'}
                           </td>
                           <td className="px-6 py-4">
@@ -1149,7 +1186,9 @@ export function Component() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-gray-500 max-w-[200px] truncate">
-                            {c.description || <span className="text-gray-300">—</span>}
+                            {c.description || (
+                              <span className="text-gray-300">—</span>
+                            )}
                           </td>
                           <td className="px-6 py-4 text-gray-400 text-xs">
                             {c.icon || <span className="text-gray-300">—</span>}
@@ -1229,7 +1268,9 @@ export function Component() {
                                 <p className="font-semibold text-gray-800">
                                   {o.customerName}
                                 </p>
-                                <p className="text-xs text-gray-400">{o.phone}</p>
+                                <p className="text-xs text-gray-400">
+                                  {o.phone}
+                                </p>
                               </div>
                             </div>
                           </td>
@@ -1254,11 +1295,16 @@ export function Component() {
                           <td className="px-5 py-4 max-w-[180px]">
                             {o.status === 'CANCELLED' && o.cancelReason ? (
                               <div>
-                                <p className="truncate text-xs text-red-500" title={o.cancelReason}>
+                                <p
+                                  className="truncate text-xs text-red-500"
+                                  title={o.cancelReason}
+                                >
                                   {o.cancelReason}
                                 </p>
                                 <p className="text-[10px] text-gray-400">
-                                  {o.cancelledBy === 'ADMIN' ? 'Bởi admin' : 'Bởi khách'}
+                                  {o.cancelledBy === 'ADMIN'
+                                    ? 'Bởi admin'
+                                    : 'Bởi khách'}
                                 </p>
                               </div>
                             ) : (
@@ -1271,7 +1317,10 @@ export function Component() {
                                 value=""
                                 onChange={(e) => {
                                   if (e.target.value) {
-                                    handleUpdateOrderStatus(o.id, e.target.value as OrderStatus);
+                                    handleUpdateOrderStatus(
+                                      o.id,
+                                      e.target.value as OrderStatus,
+                                    );
                                   }
                                 }}
                                 className="cursor-pointer rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 shadow-sm outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
@@ -1318,9 +1367,7 @@ export function Component() {
                 <h3 className="font-bold text-gray-800">
                   {editingProduct ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới'}
                 </h3>
-                <p className="text-xs text-gray-400">
-                  Điền thông tin bên dưới
-                </p>
+                <p className="text-xs text-gray-400">Điền thông tin bên dưới</p>
               </div>
               <button
                 type="button"
@@ -1346,10 +1393,15 @@ export function Component() {
                   <input
                     type="text"
                     value={
-                      ((productForm as unknown as Record<string, unknown>)[field] as string) ?? ''
+                      ((productForm as unknown as Record<string, unknown>)[
+                        field
+                      ] as string) ?? ''
                     }
                     onChange={(e) =>
-                      setProductForm({ ...productForm, [field]: e.target.value })
+                      setProductForm({
+                        ...productForm,
+                        [field]: e.target.value,
+                      })
                     }
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none transition focus:border-purple-400 focus:bg-white focus:ring-2 focus:ring-purple-100"
                   />
@@ -1368,7 +1420,10 @@ export function Component() {
                       placeholder="URL ảnh hoặc upload bên dưới"
                       value={productForm.image}
                       onChange={(e) =>
-                        setProductForm({ ...productForm, image: e.target.value })
+                        setProductForm({
+                          ...productForm,
+                          image: e.target.value,
+                        })
                       }
                       className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none transition focus:border-purple-400 focus:bg-white focus:ring-2 focus:ring-purple-100"
                     />
@@ -1411,7 +1466,9 @@ export function Component() {
                     />
                     <button
                       type="button"
-                      onClick={() => setProductForm({ ...productForm, image: '' })}
+                      onClick={() =>
+                        setProductForm({ ...productForm, image: '' })
+                      }
                       className="absolute -right-2 -top-2 cursor-pointer rounded-full bg-red-500 p-0.5 text-white hover:bg-red-600"
                     >
                       <X className="h-3 w-3" />
@@ -1427,7 +1484,10 @@ export function Component() {
                 <select
                   value={productForm.categoryId ?? ''}
                   onChange={(e) =>
-                    setProductForm({ ...productForm, categoryId: e.target.value })
+                    setProductForm({
+                      ...productForm,
+                      categoryId: e.target.value,
+                    })
                   }
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none focus:border-purple-400 focus:bg-white focus:ring-2 focus:ring-purple-100"
                 >
@@ -1457,16 +1517,26 @@ export function Component() {
                       type="number"
                       step={field === 'rating' ? '0.1' : '1'}
                       min="0"
-                      max={field === 'rating' ? '5' : field === 'stock' ? '99999' : undefined}
+                      max={
+                        field === 'rating'
+                          ? '5'
+                          : field === 'stock'
+                            ? '99999'
+                            : undefined
+                      }
                       value={
                         field === 'originalPrice'
                           ? (productForm.originalPrice ?? '')
-                          : ((productForm as unknown as Record<string, number>)[field] ?? 0)
+                          : ((productForm as unknown as Record<string, number>)[
+                              field
+                            ] ?? 0)
                       }
                       onChange={(e) =>
                         setProductForm({
                           ...productForm,
-                          [field]: e.target.value ? Number(e.target.value) : undefined,
+                          [field]: e.target.value
+                            ? Number(e.target.value)
+                            : undefined,
                         })
                       }
                       className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none focus:border-purple-400 focus:bg-white focus:ring-2 focus:ring-purple-100"
@@ -1489,7 +1559,11 @@ export function Component() {
                 disabled={savingProduct}
                 className="flex-1 cursor-pointer rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-purple-200 hover:shadow-lg disabled:opacity-60"
               >
-                {savingProduct ? 'Đang lưu...' : editingProduct ? 'Cập nhật' : 'Tạo mới'}
+                {savingProduct
+                  ? 'Đang lưu...'
+                  : editingProduct
+                    ? 'Cập nhật'
+                    : 'Tạo mới'}
               </button>
             </div>
           </div>
@@ -1531,7 +1605,10 @@ export function Component() {
                     type="text"
                     value={(categoryForm[field] as string) ?? ''}
                     onChange={(e) =>
-                      setCategoryForm({ ...categoryForm, [field]: e.target.value })
+                      setCategoryForm({
+                        ...categoryForm,
+                        [field]: e.target.value,
+                      })
                     }
                     placeholder={placeholder}
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none focus:border-purple-400 focus:bg-white focus:ring-2 focus:ring-purple-100"
@@ -1553,7 +1630,11 @@ export function Component() {
                 disabled={savingCategory || !categoryForm.name.trim()}
                 className="flex-1 cursor-pointer rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-purple-200 hover:shadow-lg disabled:opacity-60"
               >
-                {savingCategory ? 'Đang lưu...' : editingCategory ? 'Cập nhật' : 'Tạo mới'}
+                {savingCategory
+                  ? 'Đang lưu...'
+                  : editingCategory
+                    ? 'Cập nhật'
+                    : 'Tạo mới'}
               </button>
             </div>
           </div>

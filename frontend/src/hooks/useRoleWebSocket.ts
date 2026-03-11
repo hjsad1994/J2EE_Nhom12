@@ -41,7 +41,9 @@ export function useRoleWebSocket() {
               newRole === 'USER'
                 ? 'Quyền của bạn đã bị hạ xuống USER. Đang chuyển hướng...'
                 : 'Bạn đã được nâng lên ADMIN. Đang chuyển hướng...';
-            useToastStore.getState().addToast(newRole === 'USER' ? 'warning' : 'info', msg);
+            useToastStore
+              .getState()
+              .addToast(newRole === 'USER' ? 'warning' : 'info', msg);
 
             // Redirect after short delay so user sees the toast
             setTimeout(() => {

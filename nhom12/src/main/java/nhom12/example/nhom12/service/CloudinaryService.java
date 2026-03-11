@@ -57,8 +57,7 @@ public class CloudinaryService {
       }
     }
     if (!allowed) {
-      throw new BadRequestException(
-          "Chỉ hỗ trợ ảnh định dạng: JPEG, PNG, WebP, GIF");
+      throw new BadRequestException("Chỉ hỗ trợ ảnh định dạng: JPEG, PNG, WebP, GIF");
     }
   }
 }

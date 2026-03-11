@@ -7,7 +7,10 @@ import { ENDPOINTS } from '@/api/endpoints';
 
 export function Component() {
   const [searchParams] = useSearchParams();
-  const token = useMemo(() => searchParams.get('token')?.trim() ?? '', [searchParams]);
+  const token = useMemo(
+    () => searchParams.get('token')?.trim() ?? '',
+    [searchParams],
+  );
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);

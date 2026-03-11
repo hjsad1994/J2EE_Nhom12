@@ -56,8 +56,7 @@ public class ReviewController {
 
   @PostMapping("/upload-image")
   public ResponseEntity<ApiResponse<String>> uploadReviewImage(
-      @AuthenticationPrincipal UserDetails principal,
-      @RequestParam("file") MultipartFile file) {
+      @AuthenticationPrincipal UserDetails principal, @RequestParam("file") MultipartFile file) {
     resolveUser(principal); // verify auth
     String url = cloudinaryService.upload(file, "reviews");
     return ResponseEntity.ok(ApiResponse.success(url, "Image uploaded successfully"));

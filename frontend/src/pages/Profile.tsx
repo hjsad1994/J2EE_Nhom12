@@ -60,7 +60,9 @@ function Profile() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Cancel modal
-  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setProfileLoading(true);
@@ -100,7 +102,11 @@ function Profile() {
         );
         // Update local profile state
         if (profile) {
-          setProfile({ ...profile, hasPassword: true, authProvider: 'GOOGLE_AND_LOCAL' });
+          setProfile({
+            ...profile,
+            hasPassword: true,
+            authProvider: 'GOOGLE_AND_LOCAL',
+          });
         }
       } else {
         await apiClient.put(ENDPOINTS.USERS.CHANGE_PASSWORD, {
@@ -115,8 +121,7 @@ function Profile() {
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setPasswordError(
-        axiosErr.response?.data?.message ??
-          'Thao tác thất bại, thử lại sau',
+        axiosErr.response?.data?.message ?? 'Thao tác thất bại, thử lại sau',
       );
     } finally {
       setPasswordLoading(false);
@@ -297,8 +302,8 @@ function Profile() {
                     Bạn đang đăng nhập bằng Google
                   </p>
                   <p className="mt-1 text-xs text-blue-600">
-                    Thiết lập mật khẩu để có thể đăng nhập bằng tài khoản &
-                    mật khẩu trong trường hợp mất quyền truy cập Google.
+                    Thiết lập mật khẩu để có thể đăng nhập bằng tài khoản & mật
+                    khẩu trong trường hợp mất quyền truy cập Google.
                   </p>
                 </div>
               )}
@@ -331,9 +336,7 @@ function Profile() {
                 {[
                   {
                     id: 'newPassword',
-                    label: needsSetupPassword
-                      ? 'Mật khẩu'
-                      : 'Mật khẩu mới',
+                    label: needsSetupPassword ? 'Mật khẩu' : 'Mật khẩu mới',
                     value: newPassword,
                     onChange: setNewPassword,
                   },
@@ -391,9 +394,7 @@ function Profile() {
                     {passwordLoading && (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     )}
-                    {needsSetupPassword
-                      ? 'Thiết lập mật khẩu'
-                      : 'Lưu thay đổi'}
+                    {needsSetupPassword ? 'Thiết lập mật khẩu' : 'Lưu thay đổi'}
                   </motion.button>
                 </div>
               </form>
@@ -522,24 +523,25 @@ function Profile() {
                             </div>
 
                             {/* Cancel reason info */}
-                            {order.status === 'CANCELLED' && order.cancelReason && (
-                              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm">
-                                <p className="font-medium text-red-700">
-                                  Lý do hủy:{' '}
-                                  <span className="font-normal text-red-600">
-                                    {order.cancelReason}
-                                  </span>
-                                </p>
-                                {order.cancelledBy && (
-                                  <p className="mt-1 text-xs text-red-400">
-                                    Hủy bởi:{' '}
-                                    {order.cancelledBy === 'ADMIN'
-                                      ? 'Quản trị viên'
-                                      : 'Bạn'}
+                            {order.status === 'CANCELLED' &&
+                              order.cancelReason && (
+                                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm">
+                                  <p className="font-medium text-red-700">
+                                    Lý do hủy:{' '}
+                                    <span className="font-normal text-red-600">
+                                      {order.cancelReason}
+                                    </span>
                                   </p>
-                                )}
-                              </div>
-                            )}
+                                  {order.cancelledBy && (
+                                    <p className="mt-1 text-xs text-red-400">
+                                      Hủy bởi:{' '}
+                                      {order.cancelledBy === 'ADMIN'
+                                        ? 'Quản trị viên'
+                                        : 'Bạn'}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
 
                             {/* Items */}
                             <div className="space-y-3">

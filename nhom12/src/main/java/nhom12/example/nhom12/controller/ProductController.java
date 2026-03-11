@@ -62,9 +62,7 @@ public class ProductController {
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<List<ProductResponse>>> importProducts(
       @RequestBody List<@Valid CreateProductRequest> requests) {
-    List<ProductResponse> saved = requests.stream()
-        .map(productService::createProduct)
-        .toList();
+    List<ProductResponse> saved = requests.stream().map(productService::createProduct).toList();
     return new ResponseEntity<>(
         ApiResponse.created(saved, "Imported " + saved.size() + " products successfully"),
         HttpStatus.CREATED);
