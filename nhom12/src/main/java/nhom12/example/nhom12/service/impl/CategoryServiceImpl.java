@@ -6,10 +6,13 @@ import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import nhom12.example.nhom12.dto.request.CreateCategoryRequest;
 import nhom12.example.nhom12.dto.response.CategoryResponse;
+import nhom12.example.nhom12.exception.BadRequestException;
 import nhom12.example.nhom12.exception.DuplicateResourceException;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Category;
+import nhom12.example.nhom12.model.Product;
 import nhom12.example.nhom12.repository.CategoryRepository;
+import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.service.CategoryService;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class CategoryServiceImpl implements CategoryService {
 
   private final CategoryRepository categoryRepository;
+  private final ProductRepository productRepository;
 
   @Override
   public List<CategoryResponse> getAllCategories() {
@@ -55,10 +59,30 @@ public class CategoryServiceImpl implements CategoryService {
   }
 
   @Override
-  public void deleteCategory(String id) {
+  public void deleteCategory(String id, boolean force) {
     if (!categoryRepository.existsById(id)) {
       throw new ResourceNotFoundException("Category", "id", id);
     }
+
+    long productCount = productRepository.countByCategoryId(id);
+
+    if (productCount > 0 && !force) {
+      throw new BadRequestException(
+          "Danh mục này đang có "
+              + productCount
+              + " sản phẩm. Sử dụng tùy chọn 'Xóa và gỡ liên kết' để xóa danh mục"
+              + " và gỡ liên kết khỏi các sản phẩm.");
+    }
+
+    // Force delete: unlink all products from this category
+    if (productCount > 0) {
+      List<Product> products = productRepository.findByCategoryId(id);
+      for (Product product : products) {
+        product.setCategoryId(null);
+        productRepository.save(product);
+      }
+    }
+
     categoryRepository.deleteById(id);
   }
 
@@ -75,6 +99,7 @@ public class CategoryServiceImpl implements CategoryService {
         .slug(c.getSlug())
         .description(c.getDescription())
         .icon(c.getIcon())
+        .productCount(productRepository.countByCategoryId(c.getId()))
         .createdAt(c.getCreatedAt())
         .build();
   }

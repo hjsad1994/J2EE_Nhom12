@@ -19,6 +19,8 @@ public class UserResponse {
   private String username;
   private String email;
   private Role role;
+  private boolean hasPassword;
+  private String authProvider; // "LOCAL", "GOOGLE", or "GOOGLE_AND_LOCAL"
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 }

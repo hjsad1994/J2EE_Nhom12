@@ -20,6 +20,7 @@ public class ProductMapper {
         .rating(request.getRating() != null ? request.getRating() : 0.0)
         .badge(request.getBadge())
         .specs(request.getSpecs())
+        .stock(request.getStock() != null ? request.getStock() : 0)
         .build();
   }
 
@@ -40,6 +41,7 @@ public class ProductMapper {
         .rating(product.getRating())
         .badge(product.getBadge())
         .specs(product.getSpecs())
+        .stock(product.getStock())
         .createdAt(product.getCreatedAt())
         .updatedAt(product.getUpdatedAt())
         .build();

@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  Camera,
   Check,
   Heart,
   Loader2,
@@ -10,6 +11,7 @@ import {
   Star,
   Trash2,
   Truck,
+  X,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
@@ -33,7 +35,7 @@ export function Component() {
   const toggleWishlist = useWishlistStore((s) => s.toggle);
   const isWishlisted = useWishlistStore((s) => s.has(product?.id ?? ''));
   const addToCart = useCartStore((s) => s.addItem);
-  const { isLoggedIn, user } = useAuthStore();
+  const { isLoggedIn, isAdmin, user } = useAuthStore();
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -43,12 +45,13 @@ export function Component() {
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
+  const [reviewImages, setReviewImages] = useState<string[]>([]);
+  const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
 
   const myReview = reviews.find((r) => r.userId === user?.id);
 
   useEffect(() => {
     if (!id) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     apiClient
       .get<ApiResponse<Product>>(ENDPOINTS.PRODUCTS.BY_ID(id))
@@ -89,6 +92,10 @@ export function Component() {
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
+    if (!isLoggedIn) {
+      setReviewError('Vui lòng đăng nhập để gửi đánh giá');
+      return;
+    }
     setReviewError('');
     setReviewSubmitting(true);
     try {
@@ -96,6 +103,7 @@ export function Component() {
         productId: id,
         rating: reviewRating,
         comment: reviewComment,
+        images: reviewImages.length > 0 ? reviewImages : undefined,
       };
       const res = await apiClient.post<ApiResponse<Review>>(
         ENDPOINTS.REVIEWS.BASE,
@@ -104,6 +112,7 @@ export function Component() {
       setReviews((prev) => [res.data.data, ...prev]);
       setReviewComment('');
       setReviewRating(5);
+      setReviewImages([]);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setReviewError(
@@ -310,48 +319,64 @@ export function Component() {
               </div>
             </div>
 
-            {/* CTA */}
-            <div className="mt-8 flex gap-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => product && addToCart(product)}
-                className="btn-primary flex flex-1 items-center justify-center gap-2 py-4"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                Thêm vào giỏ hàng
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  if (product) {
-                    addToCart(product);
-                    navigate('/checkout');
-                  }
-                }}
-                className="btn-outline px-6 py-4"
-              >
-                Mua ngay
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => product && toggleWishlist(product)}
-                className={`flex aspect-square h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 transition-colors ${
-                  isWishlisted
-                    ? 'border-red-200 bg-red-50 text-red-500 hover:border-red-300 hover:bg-red-100'
-                    : 'border-border bg-surface text-text-secondary hover:border-brand-accent hover:text-brand-accent'
-                }`}
-                aria-label={
-                  isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'
-                }
-              >
-                <Heart
-                  className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`}
-                />
-              </motion.button>
+            {/* Stock info */}
+            <div className="mt-6">
+              {product.stock > 0 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
+                  <Check className="h-3.5 w-3.5" />
+                  Còn hàng ({product.stock} sản phẩm)
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700">
+                  Hết hàng
+                </span>
+              )}
             </div>
+
+            {/* CTA - ẩn với admin */}
+            {!isAdmin && product.stock > 0 && (
+              <div className="mt-8 flex gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => product && addToCart(product)}
+                  className="btn-primary flex flex-1 items-center justify-center gap-2 py-4"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  Thêm vào giỏ hàng
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    if (product) {
+                      addToCart(product);
+                      navigate('/checkout');
+                    }
+                  }}
+                  className="btn-outline px-6 py-4"
+                >
+                  Mua ngay
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => product && toggleWishlist(product)}
+                  className={`flex aspect-square h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 transition-colors ${
+                    isWishlisted
+                      ? 'border-red-200 bg-red-50 text-red-500 hover:border-red-300 hover:bg-red-100'
+                      : 'border-border bg-surface text-text-secondary hover:border-brand-accent hover:text-brand-accent'
+                  }`}
+                  aria-label={
+                    isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'
+                  }
+                >
+                  <Heart
+                    className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`}
+                  />
+                </motion.button>
+              </div>
+            )}
 
             {/* Services */}
             <div className="mt-8 grid grid-cols-3 gap-3">
@@ -409,8 +434,8 @@ export function Component() {
             </span>
           </div>
 
-          {/* Submit form */}
-          {isLoggedIn && !myReview && (
+          {/* Submit form - ẩn với admin */}
+          {isLoggedIn && !isAdmin && !myReview && (
             <motion.form
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -461,6 +486,75 @@ export function Component() {
                 <span className="text-xs text-text-muted">
                   {reviewComment.length}/1000
                 </span>
+              </div>
+
+              {/* Review images */}
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-2">
+                  {reviewImages.map((url, i) => (
+                    <div key={i} className="relative">
+                      <img
+                        src={url}
+                        alt={`Review ${i + 1}`}
+                        className="h-20 w-20 rounded-lg border border-border object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setReviewImages((prev) => prev.filter((_, j) => j !== i))}
+                        className="absolute -right-1.5 -top-1.5 cursor-pointer rounded-full bg-red-500 p-0.5 text-white hover:bg-red-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {reviewImages.length < 5 && (
+                    <label
+                      className={`flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed transition-colors ${
+                        uploadingReviewImage
+                          ? 'border-brand/30 bg-brand/5'
+                          : 'border-border hover:border-brand hover:bg-brand/5'
+                      }`}
+                    >
+                      {uploadingReviewImage ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-brand" />
+                      ) : (
+                        <>
+                          <Camera className="h-5 w-5 text-text-muted" />
+                          <span className="text-[10px] text-text-muted">Thêm ảnh</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        disabled={uploadingReviewImage}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          e.target.value = '';
+                          setUploadingReviewImage(true);
+                          try {
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            const res = await apiClient.post<ApiResponse<string>>(
+                              ENDPOINTS.REVIEWS.UPLOAD_IMAGE,
+                              formData,
+                              { headers: { 'Content-Type': 'multipart/form-data' } },
+                            );
+                            setReviewImages((prev) => [...prev, res.data.data]);
+                          } catch {
+                            setReviewError('Upload ảnh thất bại');
+                          } finally {
+                            setUploadingReviewImage(false);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-text-muted">
+                  {reviewImages.length}/5 ảnh (JPEG, PNG, WebP, GIF)
+                </p>
               </div>
 
               {reviewError && (
@@ -569,6 +663,19 @@ export function Component() {
                   <p className="mt-3 text-sm leading-relaxed text-text-secondary">
                     {review.comment}
                   </p>
+                  {review.images && review.images.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {review.images.map((img, i) => (
+                        <a key={i} href={img} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={img}
+                            alt={`Review ảnh ${i + 1}`}
+                            className="h-20 w-20 rounded-lg border border-border object-cover transition-transform hover:scale-105"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>

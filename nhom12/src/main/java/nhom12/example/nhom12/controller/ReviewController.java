@@ -9,9 +9,11 @@ import nhom12.example.nhom12.dto.response.ReviewResponse;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.User;
 import nhom12.example.nhom12.repository.UserRepository;
+import nhom12.example.nhom12.service.CloudinaryService;
 import nhom12.example.nhom12.service.ReviewService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -30,6 +33,7 @@ public class ReviewController {
 
   private final ReviewService reviewService;
   private final UserRepository userRepository;
+  private final CloudinaryService cloudinaryService;
 
   @GetMapping
   public ResponseEntity<ApiResponse<List<ReviewResponse>>> getReviews(
@@ -40,6 +44,7 @@ public class ReviewController {
   }
 
   @PostMapping
+  @PreAuthorize("hasRole('USER')")
   public ResponseEntity<ApiResponse<ReviewResponse>> createReview(
       @AuthenticationPrincipal UserDetails principal,
       @Valid @RequestBody CreateReviewRequest request) {
@@ -49,7 +54,17 @@ public class ReviewController {
         ApiResponse.created(review, "Review created successfully"), HttpStatus.CREATED);
   }
 
+  @PostMapping("/upload-image")
+  public ResponseEntity<ApiResponse<String>> uploadReviewImage(
+      @AuthenticationPrincipal UserDetails principal,
+      @RequestParam("file") MultipartFile file) {
+    resolveUser(principal); // verify auth
+    String url = cloudinaryService.upload(file, "reviews");
+    return ResponseEntity.ok(ApiResponse.success(url, "Image uploaded successfully"));
+  }
+
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('USER')")
   public ResponseEntity<ApiResponse<Void>> deleteReview(
       @AuthenticationPrincipal UserDetails principal, @PathVariable String id) {
     User user = resolveUser(principal);

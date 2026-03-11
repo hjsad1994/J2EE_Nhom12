@@ -3,6 +3,7 @@ package nhom12.example.nhom12.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import nhom12.example.nhom12.dto.request.CreateProductRequest;
 import nhom12.example.nhom12.dto.response.ApiResponse;
@@ -55,6 +56,18 @@ public class ProductController {
     ProductResponse product = productService.createProduct(request);
     return new ResponseEntity<>(
         ApiResponse.created(product, "Product created successfully"), HttpStatus.CREATED);
+  }
+
+  @PostMapping("/batch")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<List<ProductResponse>>> importProducts(
+      @RequestBody List<@Valid CreateProductRequest> requests) {
+    List<ProductResponse> saved = requests.stream()
+        .map(productService::createProduct)
+        .toList();
+    return new ResponseEntity<>(
+        ApiResponse.created(saved, "Imported " + saved.size() + " products successfully"),
+        HttpStatus.CREATED);
   }
 
   @PutMapping("/{id}")

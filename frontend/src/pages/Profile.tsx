@@ -8,6 +8,7 @@ import {
   Package,
   ShieldCheck,
   User,
+  XCircle,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
@@ -15,7 +16,9 @@ import { useEffect, useState } from 'react';
 import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
 import type { ApiResponse } from '@/api/types';
+import CancelOrderModal from '@/components/ui/CancelOrderModal';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useToastStore } from '@/store/useToastStore';
 import type { Order } from '@/types/order';
 import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from '@/types/order';
 
@@ -24,6 +27,8 @@ interface UserProfile {
   username: string;
   email: string;
   role: 'USER' | 'ADMIN';
+  hasPassword: boolean;
+  authProvider: 'LOCAL' | 'GOOGLE' | 'GOOGLE_AND_LOCAL';
   createdAt: string;
 }
 
@@ -31,13 +36,14 @@ export const Component = Profile;
 
 function Profile() {
   const { user } = useAuthStore();
+  const addToast = useToastStore((s) => s.addToast);
   const [activeTab, setActiveTab] = useState<'account' | 'orders'>('account');
 
   // Profile
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  // Change password
+  // Change / Setup password
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -45,10 +51,16 @@ function Profile() {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  const isGoogleOnly = profile?.authProvider === 'GOOGLE';
+  const needsSetupPassword = isGoogleOnly && !profile?.hasPassword;
+
   // Orders
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Cancel modal
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     setProfileLoading(true);
@@ -80,11 +92,23 @@ function Profile() {
 
     setPasswordLoading(true);
     try {
-      await apiClient.put(ENDPOINTS.USERS.CHANGE_PASSWORD, {
-        currentPassword,
-        newPassword,
-      });
-      setPasswordSuccess('Đổi mật khẩu thành công!');
+      if (needsSetupPassword) {
+        // Google user setting password for the first time
+        await apiClient.post(ENDPOINTS.USERS.SETUP_PASSWORD, { newPassword });
+        setPasswordSuccess(
+          'Thiết lập mật khẩu thành công! Bạn giờ có thể đăng nhập bằng tài khoản & mật khẩu.',
+        );
+        // Update local profile state
+        if (profile) {
+          setProfile({ ...profile, hasPassword: true, authProvider: 'GOOGLE_AND_LOCAL' });
+        }
+      } else {
+        await apiClient.put(ENDPOINTS.USERS.CHANGE_PASSWORD, {
+          currentPassword,
+          newPassword,
+        });
+        setPasswordSuccess('Đổi mật khẩu thành công!');
+      }
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -92,12 +116,43 @@ function Profile() {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setPasswordError(
         axiosErr.response?.data?.message ??
-          'Đổi mật khẩu thất bại, thử lại sau',
+          'Thao tác thất bại, thử lại sau',
       );
     } finally {
       setPasswordLoading(false);
     }
   };
+
+  const handleCancelOrder = async (orderId: string, reason: string) => {
+    try {
+      await apiClient.patch(ENDPOINTS.ORDERS.CANCEL(orderId), null, {
+        params: { reason },
+      });
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: 'CANCELLED' as const,
+                paymentStatus: 'FAILED',
+                cancelReason: reason,
+                cancelledBy: 'USER',
+              }
+            : o,
+        ),
+      );
+      addToast('success', 'Đơn hàng đã được hủy thành công');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      addToast(
+        'error',
+        axiosErr.response?.data?.message ?? 'Không thể hủy đơn hàng',
+      );
+    }
+  };
+
+  const canCancel = (status: string) =>
+    status === 'PENDING' || status === 'CONFIRMED';
 
   const initial = (user?.username ?? 'U').charAt(0).toUpperCase();
 
@@ -190,6 +245,15 @@ function Profile() {
                           : 'Khách hàng',
                     },
                     {
+                      label: 'Phương thức đăng nhập',
+                      value:
+                        profile?.authProvider === 'GOOGLE'
+                          ? 'Google'
+                          : profile?.authProvider === 'GOOGLE_AND_LOCAL'
+                            ? 'Google + Mật khẩu'
+                            : 'Tài khoản & mật khẩu',
+                    },
+                    {
                       label: 'Ngày tham gia',
                       value: profile?.createdAt
                         ? new Date(profile.createdAt).toLocaleDateString(
@@ -219,30 +283,65 @@ function Profile() {
               )}
             </div>
 
-            {/* Change password card */}
+            {/* Password card */}
             <div className="card p-6">
               <h2 className="mb-4 flex items-center gap-2 font-display text-base font-semibold text-text-primary">
                 <KeyRound className="h-4 w-4 text-brand" />
-                Đổi mật khẩu
+                {needsSetupPassword ? 'Thiết lập mật khẩu' : 'Đổi mật khẩu'}
               </h2>
 
+              {/* Info banner for Google-only users */}
+              {needsSetupPassword && (
+                <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-sm font-medium text-blue-800">
+                    Bạn đang đăng nhập bằng Google
+                  </p>
+                  <p className="mt-1 text-xs text-blue-600">
+                    Thiết lập mật khẩu để có thể đăng nhập bằng tài khoản &
+                    mật khẩu trong trường hợp mất quyền truy cập Google.
+                  </p>
+                </div>
+              )}
+
               <form onSubmit={handleChangePassword} className="space-y-4">
+                {/* Only show current password for users who already have one */}
+                {!needsSetupPassword && (
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="currentPassword"
+                      className="text-xs font-medium text-text-secondary"
+                    >
+                      Mật khẩu hiện tại
+                    </label>
+                    <div className="relative">
+                      <Lock className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-text-muted" />
+                      <input
+                        id="currentPassword"
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        required
+                        className="w-full rounded-xl border border-border bg-surface-alt px-4 py-2.5 pl-9 text-sm outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-brand"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {[
                   {
-                    id: 'currentPassword',
-                    label: 'Mật khẩu hiện tại',
-                    value: currentPassword,
-                    onChange: setCurrentPassword,
-                  },
-                  {
                     id: 'newPassword',
-                    label: 'Mật khẩu mới',
+                    label: needsSetupPassword
+                      ? 'Mật khẩu'
+                      : 'Mật khẩu mới',
                     value: newPassword,
                     onChange: setNewPassword,
                   },
                   {
                     id: 'confirmPassword',
-                    label: 'Nhập lại mật khẩu mới',
+                    label: needsSetupPassword
+                      ? 'Nhập lại mật khẩu'
+                      : 'Nhập lại mật khẩu mới',
                     value: confirmPassword,
                     onChange: setConfirmPassword,
                   },
@@ -262,6 +361,7 @@ function Profile() {
                         value={field.value}
                         onChange={(e) => field.onChange(e.target.value)}
                         required
+                        minLength={6}
                         className="w-full rounded-xl border border-border bg-surface-alt px-4 py-2.5 pl-9 text-sm outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-brand"
                         placeholder="••••••••"
                       />
@@ -291,7 +391,9 @@ function Profile() {
                     {passwordLoading && (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     )}
-                    Lưu thay đổi
+                    {needsSetupPassword
+                      ? 'Thiết lập mật khẩu'
+                      : 'Lưu thay đổi'}
                   </motion.button>
                 </div>
               </form>
@@ -419,6 +521,26 @@ function Profile() {
                               )}
                             </div>
 
+                            {/* Cancel reason info */}
+                            {order.status === 'CANCELLED' && order.cancelReason && (
+                              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm">
+                                <p className="font-medium text-red-700">
+                                  Lý do hủy:{' '}
+                                  <span className="font-normal text-red-600">
+                                    {order.cancelReason}
+                                  </span>
+                                </p>
+                                {order.cancelledBy && (
+                                  <p className="mt-1 text-xs text-red-400">
+                                    Hủy bởi:{' '}
+                                    {order.cancelledBy === 'ADMIN'
+                                      ? 'Quản trị viên'
+                                      : 'Bạn'}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
                             {/* Items */}
                             <div className="space-y-3">
                               {order.items.map((item) => (
@@ -472,6 +594,20 @@ function Profile() {
                                 </span>
                               </div>
                             </div>
+
+                            {/* Cancel button */}
+                            {canCancel(order.status) && (
+                              <div className="mt-4 flex justify-end border-t border-border pt-4">
+                                <button
+                                  type="button"
+                                  onClick={() => setCancellingOrderId(order.id)}
+                                  className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                  Hủy đơn hàng
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -481,6 +617,17 @@ function Profile() {
               </div>
             )}
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cancel Order Modal */}
+      <AnimatePresence>
+        {cancellingOrderId && (
+          <CancelOrderModal
+            orderId={cancellingOrderId}
+            onConfirm={handleCancelOrder}
+            onClose={() => setCancellingOrderId(null)}
+          />
         )}
       </AnimatePresence>
     </div>

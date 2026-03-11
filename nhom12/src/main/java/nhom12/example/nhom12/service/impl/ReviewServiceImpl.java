@@ -43,6 +43,7 @@ public class ReviewServiceImpl implements ReviewService {
             .productId(request.getProductId())
             .rating(request.getRating())
             .comment(request.getComment())
+            .images(request.getImages() != null ? request.getImages() : List.of())
             .build();
 
     Review saved = reviewRepository.save(review);
@@ -91,6 +92,7 @@ public class ReviewServiceImpl implements ReviewService {
         .username(r.getUsername())
         .rating(r.getRating())
         .comment(r.getComment())
+        .images(r.getImages())
         .createdAt(r.getCreatedAt())
         .build();
   }

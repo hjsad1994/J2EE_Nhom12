@@ -34,4 +34,7 @@ public class CreateProductRequest {
   private Double rating = 0.0;
   private String badge;
   private String specs;
+
+  @Min(value = 0, message = "Stock must be non-negative")
+  private Integer stock = 0;
 }
