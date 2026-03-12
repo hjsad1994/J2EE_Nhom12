@@ -15,7 +15,9 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -38,27 +40,43 @@ public class WebSocketAuthConfig implements WebSocketMessageBrokerConfigurer {
             StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-            if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+            if (accessor == null) {
+              return message;
+            }
+
+            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
               String authHeader = accessor.getFirstNativeHeader("Authorization");
-              if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
-                try {
-                  String username = jwtUtil.extractUsername(token);
-                  User user = userRepository.findByUsername(username).orElse(null);
-                  if (user != null) {
-                    UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                            user.getId(),
-                            null,
-                            Collections.singletonList(
-                                new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
-                    accessor.setUser(auth);
-                  }
-                } catch (Exception ignored) {
-                  // Invalid token - connection will proceed without auth
-                }
+              if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new AuthenticationCredentialsNotFoundException(
+                    "Missing or invalid Authorization header");
+              }
+
+              String token = authHeader.substring(7);
+              try {
+                String username = jwtUtil.extractUsername(token);
+                User user =
+                    userRepository
+                        .findByUsername(username)
+                        .orElseThrow(() -> new BadCredentialsException("User not found"));
+
+                UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(
+                        user.getId(),
+                        null,
+                        Collections.singletonList(
+                            new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+                accessor.setUser(auth);
+              } catch (Exception ex) {
+                throw new BadCredentialsException("Invalid WebSocket authentication token", ex);
               }
             }
+
+            if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())
+                && accessor.getUser() == null) {
+              throw new AuthenticationCredentialsNotFoundException(
+                  "Authentication is required to subscribe");
+            }
+
             return message;
           }
         });

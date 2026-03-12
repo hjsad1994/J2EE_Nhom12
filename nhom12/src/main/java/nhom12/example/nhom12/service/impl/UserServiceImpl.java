@@ -127,8 +127,9 @@ public class UserServiceImpl implements UserService {
 
     // Notify the affected user in real-time via WebSocket
     if (oldRole != role) {
-      messagingTemplate.convertAndSend(
-          "/topic/role-change/" + id,
+      messagingTemplate.convertAndSendToUser(
+          id,
+          "/queue/role-change",
           Map.of("userId", id, "oldRole", oldRole.name(), "newRole", role.name()));
     }
 
