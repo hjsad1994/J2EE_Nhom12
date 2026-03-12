@@ -175,8 +175,9 @@ public class OrderServiceImpl implements OrderService {
     OrderResponse response = toResponse(orderRepository.save(order));
 
     // Send WebSocket notification for order status change
-    messagingTemplate.convertAndSend(
-        "/topic/order-status/" + order.getUserId(),
+    messagingTemplate.convertAndSendToUser(
+        order.getUserId(),
+        "/queue/order-status",
         Map.of(
             "orderId", order.getId(),
             "oldStatus", currentStatus.name(),

@@ -29,7 +29,7 @@ export function useRoleWebSocket() {
       reconnectDelay: 5000,
       onConnect: () => {
         // Subscribe to role changes for the current user
-        client.subscribe(`/topic/role-change/${user.id}`, (message) => {
+        client.subscribe(`/user/queue/role-change`, (message) => {
           const data = JSON.parse(message.body);
           const newRole = data.newRole as 'USER' | 'ADMIN';
 

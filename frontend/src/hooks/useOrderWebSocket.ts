@@ -35,7 +35,7 @@ export function useOrderWebSocket() {
       },
       reconnectDelay: 5000,
       onConnect: () => {
-        client.subscribe(`/topic/order-status/${user.id}`, (message) => {
+        client.subscribe(`/user/queue/order-status`, (message) => {
           const data = JSON.parse(message.body);
           const newStatus = data.newStatus as string;
           const orderId = (data.orderId as string) ?? '';
