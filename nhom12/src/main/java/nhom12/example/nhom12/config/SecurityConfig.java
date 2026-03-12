@@ -1,7 +1,9 @@
 package nhom12.example.nhom12.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import nhom12.example.nhom12.security.CustomOAuth2UserService;
 import nhom12.example.nhom12.security.JwtAuthenticationFilter;
@@ -9,6 +11,7 @@ import nhom12.example.nhom12.security.OAuth2AuthenticationSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -39,6 +42,8 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers("/api/auth/**")
                     .permitAll()
+                    .requestMatchers("/ws/**")
+                    .permitAll()
                     .requestMatchers("/oauth2/**", "/login/oauth2/**")
                     .permitAll()
                     .requestMatchers("/error")
@@ -54,6 +59,17 @@ public class SecurityConfig {
                     .permitAll()
                     .anyRequest()
                     .authenticated())
+        .exceptionHandling(
+            ex ->
+                ex.authenticationEntryPoint(
+                    (request, response, authException) -> {
+                      response.setStatus(401);
+                      response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                      new ObjectMapper()
+                          .writeValue(
+                              response.getWriter(),
+                              Map.of("status", 401, "message", "Unauthorized"));
+                    }))
         .oauth2Login(
             oauth2 ->
                 oauth2

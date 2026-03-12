@@ -15,6 +15,7 @@ interface AuthState {
   isAdmin: boolean;
   login: (token: string, user: AuthUser) => void;
   logout: () => void;
+  syncRole: (role: 'USER' | 'ADMIN') => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -36,6 +37,12 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         set({ token: null, user: null, isLoggedIn: false, isAdmin: false });
       },
+
+      syncRole: (role) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, role } : null,
+          isAdmin: role === 'ADMIN',
+        })),
     }),
     { name: 'nebula-auth', version: 1 },
   ),

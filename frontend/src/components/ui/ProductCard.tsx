@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import type { Product } from '@/types/product';
 
 interface ProductCardProps {
@@ -15,6 +16,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const toggleWishlist = useWishlistStore((s) => s.toggle);
   const isWishlisted = useWishlistStore((s) => s.has(product.id));
   const addToCart = useCartStore((s) => s.addItem);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
 
   const discount = product.originalPrice
     ? Math.round((1 - product.price / product.originalPrice) * 100)
@@ -33,38 +35,45 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       >
         {/* Badges — top-left, stacked */}
         <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
-          {product.badge && (
+          {product.stock <= 0 && (
+            <span className="rounded-full bg-gray-800 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+              Hết hàng
+            </span>
+          )}
+          {product.badge && product.stock > 0 && (
             <span className="rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white shadow-sm">
               {product.badge}
             </span>
           )}
-          {discount && (
+          {discount && product.stock > 0 && (
             <span className="rounded-full bg-red-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
               -{discount}%
             </span>
           )}
         </div>
 
-        {/* Wishlist toggle — top-right */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={(e) => {
-            e.preventDefault();
-            toggleWishlist(product);
-          }}
-          className="absolute top-3 right-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-text-muted shadow-sm transition-all duration-200 hover:text-brand-accent hover:shadow-md"
-          aria-label={
-            isWishlisted
-              ? `Bỏ yêu thích ${product.name}`
-              : `Yêu thích ${product.name}`
-          }
-          aria-pressed={isWishlisted}
-        >
-          <Heart
-            className={`h-4 w-4 ${isWishlisted ? 'fill-brand-accent text-brand-accent' : ''}`}
-          />
-        </motion.button>
+        {/* Wishlist toggle — top-right (ẩn với admin) */}
+        {!isAdmin && (
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => {
+              e.preventDefault();
+              toggleWishlist(product);
+            }}
+            className="absolute top-3 right-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-text-muted shadow-sm transition-all duration-200 hover:text-brand-accent hover:shadow-md"
+            aria-label={
+              isWishlisted
+                ? `Bỏ yêu thích ${product.name}`
+                : `Yêu thích ${product.name}`
+            }
+            aria-pressed={isWishlisted}
+          >
+            <Heart
+              className={`h-4 w-4 ${isWishlisted ? 'fill-brand-accent text-brand-accent' : ''}`}
+            />
+          </motion.button>
+        )}
 
         {/* Image */}
         <div className="relative flex items-center justify-center overflow-hidden bg-surface-alt p-6 pt-8">
@@ -119,19 +128,21 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                 </span>
               )}
             </div>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                addToCart(product);
-              }}
-              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-brand text-white transition-shadow hover:shadow-lg"
-              aria-label={`Thêm ${product.name} vào giỏ hàng`}
-            >
-              <ShoppingCart className="h-4 w-4" />
-            </motion.button>
+            {!isAdmin && product.stock > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  addToCart(product);
+                }}
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-brand text-white transition-shadow hover:shadow-lg"
+                aria-label={`Thêm ${product.name} vào giỏ hàng`}
+              >
+                <ShoppingCart className="h-4 w-4" />
+              </motion.button>
+            )}
           </div>
         </div>
       </Link>

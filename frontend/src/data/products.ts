@@ -10,6 +10,7 @@ export const featuredProducts: Product[] = [
     image:
       'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-pro-hero-desert-702702_AV1?wid=940&hei=1112&fmt=png-alpha',
     rating: 4.9,
+    stock: 24,
     badge: 'Hot',
     specs: '256GB · Titanium · A18 Pro',
   },
@@ -22,6 +23,7 @@ export const featuredProducts: Product[] = [
     image:
       'https://images.samsung.com/is/image/samsung/p6pim/vn/2501/gallery/vn-galaxy-s25-ultra-coldsnap-titanium-471198-sm-s938blbdxxv-544691988?$650_519_PNG$',
     rating: 4.8,
+    stock: 18,
     badge: 'New',
     specs: '256GB · Titanium · Snapdragon 8 Elite',
   },
@@ -33,6 +35,7 @@ export const featuredProducts: Product[] = [
     image:
       'https://lcdn.altex.ro/resize/media/catalog/product/G/o/9b82e35b1c54daa67d2e0003e2fec2c6/Google_Pixel_9_Pro_Obsidian_1.jpg',
     rating: 4.7,
+    stock: 12,
     specs: '128GB · AI Camera · Tensor G4',
   },
   {
@@ -44,6 +47,7 @@ export const featuredProducts: Product[] = [
     image:
       'https://i02.appmifile.com/images/2025/03/14/c67e6fac-f2ef-4406-aa96-b914449751f0.png',
     rating: 4.6,
+    stock: 15,
     badge: 'Sale',
     specs: '512GB · Leica Camera · Snapdragon 8 Elite',
   },
@@ -55,6 +59,7 @@ export const featuredProducts: Product[] = [
     image:
       'https://image.oppo.com/content/dam/oppo/common/mkt/v2-2/find-x8-pro-en/navigation/Find-X8-Pro-Space-Black-Navigation-542x540.png',
     rating: 4.5,
+    stock: 21,
     specs: '256GB · Hasselblad Camera · Dimensity 9400',
   },
   {
@@ -66,6 +71,7 @@ export const featuredProducts: Product[] = [
     image:
       'https://nothing.tech/cdn/shop/files/Phone_2a_Plus_Gray_Front.png?v=1721628090&width=800',
     rating: 4.4,
+    stock: 30,
     badge: 'Trending',
     specs: '256GB · Glyph Interface · Snapdragon 8s Gen 4',
   },
@@ -78,6 +84,7 @@ export const featuredProducts: Product[] = [
     image:
       'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-hero-geo-702702_AV1?wid=940&hei=1112&fmt=png-alpha',
     rating: 4.7,
+    stock: 27,
     specs: '128GB · A18 chip · Dynamic Island',
   },
   {
@@ -89,6 +96,7 @@ export const featuredProducts: Product[] = [
     image:
       'https://images.samsung.com/is/image/samsung/p6pim/vn/2501/gallery/vn-galaxy-a56-5g-sm-a566-sm-a566elbdxxv-544048507?$650_519_PNG$',
     rating: 4.3,
+    stock: 36,
     badge: 'Best Seller',
     specs: '128GB · Exynos 1580 · OIS Camera',
   },
@@ -104,6 +112,7 @@ export const allProducts: Product[] = [
     image:
       'https://oasis.opstatics.com/content/dam/oasis/page/2025/operation/0107/midnight-ocean-800.png',
     rating: 4.6,
+    stock: 17,
     specs: '256GB · Snapdragon 8 Elite · 6000mAh',
   },
   {
@@ -114,6 +123,7 @@ export const allProducts: Product[] = [
     originalPrice: 18990000,
     image: 'https://image01.realme.net/general/20241120/1732077616673.png',
     rating: 4.4,
+    stock: 29,
     badge: 'Value',
     specs: '256GB · Snapdragon 8 Elite · IP69',
   },
@@ -125,6 +135,7 @@ export const allProducts: Product[] = [
     image:
       'https://www.vivo.com.vn/media/catalog/product/x/2/x200_pro_cosmic_black_3.png',
     rating: 4.5,
+    stock: 14,
     specs: '256GB · ZEISS Camera · Dimensity 9400',
   },
   {
@@ -135,6 +146,7 @@ export const allProducts: Product[] = [
     image:
       'https://consumer.huawei.com/content/dam/huawei-cbg-site/common/mkt/pdp/phones/pura70-ultra/img/design/pura70-ultra-green-back.png',
     rating: 4.3,
+    stock: 9,
     specs: '512GB · XMAGE Camera · Kirin 9010',
   },
 ];

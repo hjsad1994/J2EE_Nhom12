@@ -9,6 +9,7 @@ import nhom12.example.nhom12.model.User;
 import nhom12.example.nhom12.repository.UserRepository;
 import nhom12.example.nhom12.service.WishlistService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/wishlist")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('USER')")
 public class WishlistController {
 
   private final WishlistService wishlistService;

@@ -25,6 +25,7 @@ public class ProductResponse {
   private double rating;
   private String badge;
   private String specs;
+  private int stock;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 }

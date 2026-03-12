@@ -10,6 +10,7 @@ export interface Product {
   rating: number;
   badge?: string;
   specs?: string;
+  stock: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -24,6 +25,7 @@ export interface CreateProductPayload {
   rating?: number;
   badge?: string;
   specs?: string;
+  stock?: number;
 }
 
 export interface Category {
@@ -32,6 +34,7 @@ export interface Category {
   slug: string;
   description?: string;
   icon?: string;
+  productCount: number;
   createdAt?: string;
 }
 

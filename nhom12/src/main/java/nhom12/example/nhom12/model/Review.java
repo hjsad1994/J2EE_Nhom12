@@ -1,5 +1,6 @@
 package nhom12.example.nhom12.model;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,4 +28,6 @@ public class Review extends BaseDocument {
   private int rating;
 
   private String comment;
+
+  private List<String> images;
 }

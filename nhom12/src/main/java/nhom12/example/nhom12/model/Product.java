@@ -26,4 +26,5 @@ public class Product extends BaseDocument {
   private double rating;
   private String badge;
   private String specs;
+  private int stock;
 }

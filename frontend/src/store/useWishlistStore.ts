@@ -58,6 +58,8 @@ export const useWishlistStore = create<WishlistState>()(
             ENDPOINTS.WISHLIST.BASE,
           );
           set({ items: res.data.data });
+        } catch {
+          // ignore fetch errors silently
         } finally {
           set({ isLoading: false });
         }

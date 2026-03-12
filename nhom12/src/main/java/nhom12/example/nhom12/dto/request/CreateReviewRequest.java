@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,4 +28,7 @@ public class CreateReviewRequest {
   @NotBlank(message = "Comment is required")
   @Size(max = 1000, message = "Comment must not exceed 1000 characters")
   private String comment;
+
+  @Size(max = 5, message = "Tối đa 5 ảnh")
+  private List<String> images;
 }

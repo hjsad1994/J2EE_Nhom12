@@ -9,6 +9,7 @@ import nhom12.example.nhom12.dto.response.ApiErrorResponse;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -86,6 +87,16 @@ public class GlobalExceptionHandler {
             .status(HttpStatus.BAD_REQUEST.value())
             .build();
     return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+    ApiErrorResponse error =
+        ApiErrorResponse.builder()
+            .message("Access denied")
+            .status(HttpStatus.FORBIDDEN.value())
+            .build();
+    return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
   }
 
   @ExceptionHandler(Exception.class)

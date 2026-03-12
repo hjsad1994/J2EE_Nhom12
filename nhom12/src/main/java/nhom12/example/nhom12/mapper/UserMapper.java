@@ -13,11 +13,23 @@ public class UserMapper {
   }
 
   public UserResponse toResponse(User user) {
+    String authProvider;
+    boolean isGoogle = user.getGoogleId() != null && !user.getGoogleId().isBlank();
+    if (isGoogle && user.isHasPassword()) {
+      authProvider = "GOOGLE_AND_LOCAL";
+    } else if (isGoogle) {
+      authProvider = "GOOGLE";
+    } else {
+      authProvider = "LOCAL";
+    }
+
     return UserResponse.builder()
         .id(user.getId())
         .username(user.getUsername())
         .email(user.getEmail())
         .role(user.getRole())
+        .hasPassword(user.isHasPassword())
+        .authProvider(authProvider)
         .createdAt(user.getCreatedAt())
         .updatedAt(user.getUpdatedAt())
         .build();

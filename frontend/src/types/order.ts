@@ -34,6 +34,8 @@ export interface Order {
   createdAt: string;
   paymentStatus?: string;
   momoTransId?: string;
+  cancelReason?: string;
+  cancelledBy?: string;
 }
 
 export interface CreateOrderPayload {
@@ -56,6 +58,17 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   DELIVERED: 'Đã giao',
   CANCELLED: 'Đã hủy',
 };
+
+/** Predefined cancel reasons (similar to Shopee). */
+export const CANCEL_REASONS = [
+  'Tôi muốn thay đổi địa chỉ giao hàng',
+  'Tôi muốn thay đổi sản phẩm (size, màu, số lượng)',
+  'Tôi không có nhu cầu mua nữa',
+  'Tôi tìm được giá rẻ hơn ở chỗ khác',
+  'Tôi đặt nhầm sản phẩm',
+  'Thời gian giao hàng quá lâu',
+  'Khác',
+] as const;
 
 export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
   PENDING: 'bg-yellow-50 text-yellow-700',

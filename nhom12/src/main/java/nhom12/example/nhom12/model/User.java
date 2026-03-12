@@ -30,4 +30,7 @@ public class User extends BaseDocument {
   private String googleId;
 
   @Builder.Default private Role role = Role.USER;
+
+  /** true if user explicitly set their own password (not auto-generated for OAuth). */
+  @Builder.Default private boolean hasPassword = false;
 }

@@ -38,4 +38,8 @@ public class Order extends BaseDocument {
   // Payment tracking
   private String paymentStatus; // PENDING, PAID, FAILED
   private String momoTransId;
+
+  // Cancellation tracking
+  private String cancelReason;
+  private String cancelledBy; // "USER" or "ADMIN"
 }

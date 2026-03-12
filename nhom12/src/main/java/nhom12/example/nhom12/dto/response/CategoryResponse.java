@@ -19,5 +19,6 @@ public class CategoryResponse {
   private String slug;
   private String description;
   private String icon;
+  private long productCount;
   private LocalDateTime createdAt;
 }

@@ -36,6 +36,7 @@ public class OrderController {
   private final UserRepository userRepository;
 
   @PostMapping
+  @PreAuthorize("hasRole('USER')")
   public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
       @AuthenticationPrincipal UserDetails principal,
       @Valid @RequestBody CreateOrderRequest request) {
@@ -69,6 +70,17 @@ public class OrderController {
       @PathVariable String id, @RequestParam OrderStatus status) {
     return ResponseEntity.ok(
         ApiResponse.success(orderService.updateStatus(id, status), "Status updated successfully"));
+  }
+
+  @PatchMapping("/{id}/cancel")
+  public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
+      @PathVariable String id,
+      @RequestParam(required = false, defaultValue = "Không có lý do") String reason,
+      @AuthenticationPrincipal UserDetails principal) {
+    String userId = resolveUserId(principal);
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            orderService.cancelOrder(id, userId, reason), "Order cancelled successfully"));
   }
 
   private String resolveUserId(UserDetails principal) {

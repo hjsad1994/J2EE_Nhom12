@@ -36,4 +36,6 @@ public class OrderResponse {
   private LocalDateTime createdAt;
   private String paymentStatus;
   private String momoTransId;
+  private String cancelReason;
+  private String cancelledBy;
 }
