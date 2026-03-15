@@ -1,0 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+nhom12.example.nhom12.config.DotenvEnvironmentPostProcessor
