@@ -13,8 +13,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
-public class DotenvEnvironmentPostProcessor
-    implements EnvironmentPostProcessor, Ordered {
+public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor, Ordered {
 
   private static final String PROPERTY_SOURCE_NAME = "dotenv";
 

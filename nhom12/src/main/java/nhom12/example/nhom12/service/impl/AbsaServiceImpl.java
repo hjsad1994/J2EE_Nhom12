@@ -28,9 +28,7 @@ public class AbsaServiceImpl implements AbsaService {
     try {
       ResponseEntity<AbsaPredictResponse> response =
           restTemplate.postForEntity(
-              absaApiUrl + "/predict",
-              new AbsaPredictRequest(comment),
-              AbsaPredictResponse.class);
+              absaApiUrl + "/predict", new AbsaPredictRequest(comment), AbsaPredictResponse.class);
 
       if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
         return List.of();

@@ -68,13 +68,20 @@ export function Component() {
         const currentProduct = res.data.data;
         setProduct(currentProduct);
         return apiClient
-          .get<ApiResponse<PaginatedResponse<Product>>>(ENDPOINTS.PRODUCTS.BASE, {
-            params: { size: 100 },
-          })
+          .get<ApiResponse<PaginatedResponse<Product>>>(
+            ENDPOINTS.PRODUCTS.BASE,
+            {
+              params: { size: 100 },
+            },
+          )
           .then((all) => {
             setRelated(
               all.data.data.content
-                .filter((item) => item.brand === currentProduct.brand && item.id !== currentProduct.id)
+                .filter(
+                  (item) =>
+                    item.brand === currentProduct.brand &&
+                    item.id !== currentProduct.id,
+                )
                 .slice(0, 4),
             );
           });
@@ -308,7 +315,9 @@ export function Component() {
             </div>
 
             {product.specs && (
-              <p className="mt-4 text-sm text-text-secondary">{product.specs}</p>
+              <p className="mt-4 text-sm text-text-secondary">
+                {product.specs}
+              </p>
             )}
 
             <div className="mt-6 flex items-end gap-3">
@@ -332,19 +341,22 @@ export function Component() {
                 Màu sắc
               </p>
               <div className="flex gap-2">
-                {['bg-zinc-800', 'bg-zinc-400', 'bg-amber-700', 'bg-blue-900'].map(
-                  (color, index) => (
-                    <button
-                      key={color}
-                      type="button"
-                      className={`h-8 w-8 cursor-pointer rounded-full ${color} ring-2 ring-offset-2 ring-offset-surface transition-all ${
-                        index === 0
-                          ? 'ring-brand'
-                          : 'ring-transparent hover:ring-border-strong'
-                      }`}
-                    />
-                  ),
-                )}
+                {[
+                  'bg-zinc-800',
+                  'bg-zinc-400',
+                  'bg-amber-700',
+                  'bg-blue-900',
+                ].map((color, index) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`h-8 w-8 cursor-pointer rounded-full ${color} ring-2 ring-offset-2 ring-offset-surface transition-all ${
+                      index === 0
+                        ? 'ring-brand'
+                        : 'ring-transparent hover:ring-border-strong'
+                    }`}
+                  />
+                ))}
               </div>
             </div>
 
@@ -413,7 +425,9 @@ export function Component() {
                       ? 'border-red-200 bg-red-50 text-red-500 hover:border-red-300 hover:bg-red-100'
                       : 'border-border bg-surface text-text-secondary hover:border-brand-accent hover:text-brand-accent'
                   }`}
-                  aria-label={isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+                  aria-label={
+                    isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'
+                  }
                 >
                   <Heart
                     className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`}
@@ -483,7 +497,9 @@ export function Component() {
               className="mb-8 rounded-2xl border border-border bg-surface p-6"
             >
               <p className="mb-4 font-medium text-text-primary">
-                {editingReviewId ? 'Chỉnh sửa đánh giá của bạn' : 'Viết đánh giá của bạn'}
+                {editingReviewId
+                  ? 'Chỉnh sửa đánh giá của bạn'
+                  : 'Viết đánh giá của bạn'}
               </p>
 
               <div className="mb-4 flex items-center gap-1">
@@ -540,7 +556,9 @@ export function Component() {
                         type="button"
                         onClick={() =>
                           setReviewImages((prev) =>
-                            prev.filter((_, imageIndex) => imageIndex !== index),
+                            prev.filter(
+                              (_, imageIndex) => imageIndex !== index,
+                            ),
                           )
                         }
                         className="absolute -right-1.5 -top-1.5 cursor-pointer rounded-full bg-red-500 p-0.5 text-white hover:bg-red-600"
@@ -581,15 +599,13 @@ export function Component() {
                           try {
                             const formData = new FormData();
                             formData.append('file', file);
-                            const res = await apiClient.post<ApiResponse<string>>(
-                              ENDPOINTS.REVIEWS.UPLOAD_IMAGE,
-                              formData,
-                              {
-                                headers: {
-                                  'Content-Type': 'multipart/form-data',
-                                },
+                            const res = await apiClient.post<
+                              ApiResponse<string>
+                            >(ENDPOINTS.REVIEWS.UPLOAD_IMAGE, formData, {
+                              headers: {
+                                'Content-Type': 'multipart/form-data',
                               },
-                            );
+                            });
                             setReviewImages((prev) => [...prev, res.data.data]);
                           } catch {
                             setReviewError('Upload ảnh thất bại');
@@ -645,7 +661,10 @@ export function Component() {
           {!isLoggedIn && (
             <div className="mb-8 rounded-2xl border border-border bg-surface-alt px-6 py-5 text-center">
               <p className="text-sm text-text-secondary">
-                <Link to="/login" className="font-medium text-brand hover:underline">
+                <Link
+                  to="/login"
+                  className="font-medium text-brand hover:underline"
+                >
                   Đăng nhập
                 </Link>{' '}
                 để viết đánh giá sản phẩm.
@@ -741,22 +760,23 @@ export function Component() {
                     {review.comment}
                   </p>
 
-                  {review.analysisResults && review.analysisResults.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {review.analysisResults.map((result) => (
-                        <div
-                          key={`${review.id}-${result.aspect}-${result.sentiment}`}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium shadow-sm ${sentimentStyles[result.sentiment]}`}
-                        >
-                          <span className="text-text-primary">
-                            {aspectLabels[result.aspect] ?? result.aspect}
-                          </span>
-                          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
-                          <span>{sentimentLabels[result.sentiment]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {review.analysisResults &&
+                    review.analysisResults.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {review.analysisResults.map((result) => (
+                          <div
+                            key={`${review.id}-${result.aspect}-${result.sentiment}`}
+                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium shadow-sm ${sentimentStyles[result.sentiment]}`}
+                          >
+                            <span className="text-text-primary">
+                              {aspectLabels[result.aspect] ?? result.aspect}
+                            </span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+                            <span>{sentimentLabels[result.sentiment]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                   {review.images && review.images.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
