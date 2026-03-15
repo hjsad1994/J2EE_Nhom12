@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import nhom12.example.nhom12.model.ReviewAspectAnalysis;
 
 @Getter
 @Setter
@@ -21,5 +22,6 @@ public class ReviewResponse {
   private int rating;
   private String comment;
   private List<String> images;
+  private List<ReviewAspectAnalysis> analysisResults;
   private LocalDateTime createdAt;
 }

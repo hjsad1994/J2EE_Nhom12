@@ -10,6 +10,7 @@ import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Review;
 import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.repository.ReviewRepository;
+import nhom12.example.nhom12.service.AbsaService;
 import nhom12.example.nhom12.service.ReviewService;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ public class ReviewServiceImpl implements ReviewService {
 
   private final ReviewRepository reviewRepository;
   private final ProductRepository productRepository;
+  private final AbsaService absaService;
 
   @Override
   public List<ReviewResponse> getReviewsByProduct(String productId) {
@@ -44,7 +46,33 @@ public class ReviewServiceImpl implements ReviewService {
             .rating(request.getRating())
             .comment(request.getComment())
             .images(request.getImages() != null ? request.getImages() : List.of())
+            .analysisResults(absaService.analyzeComment(request.getComment()))
             .build();
+
+    Review saved = reviewRepository.save(review);
+    recalculateProductRating(request.getProductId());
+    return toResponse(saved);
+  }
+
+  @Override
+  public ReviewResponse updateReview(String reviewId, String userId, CreateReviewRequest request) {
+    Review review =
+        reviewRepository
+            .findById(reviewId)
+            .orElseThrow(() -> new ResourceNotFoundException("Review", "id", reviewId));
+
+    if (!review.getUserId().equals(userId)) {
+      throw new BadRequestException("You can only update your own reviews");
+    }
+
+    if (!review.getProductId().equals(request.getProductId())) {
+      throw new BadRequestException("Product ID does not match the review");
+    }
+
+    review.setRating(request.getRating());
+    review.setComment(request.getComment());
+    review.setImages(request.getImages() != null ? request.getImages() : List.of());
+    review.setAnalysisResults(absaService.analyzeComment(request.getComment()));
 
     Review saved = reviewRepository.save(review);
     recalculateProductRating(request.getProductId());
@@ -93,6 +121,7 @@ public class ReviewServiceImpl implements ReviewService {
         .rating(r.getRating())
         .comment(r.getComment())
         .images(r.getImages())
+        .analysisResults(r.getAnalysisResults())
         .createdAt(r.getCreatedAt())
         .build();
   }

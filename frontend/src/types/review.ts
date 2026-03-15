@@ -1,3 +1,9 @@
+export interface ReviewAspectAnalysis {
+  aspect: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  confidence?: number;
+}
+
 export interface Review {
   id: string;
   productId: string;
@@ -6,6 +12,7 @@ export interface Review {
   rating: number;
   comment: string;
   images?: string[];
+  analysisResults?: ReviewAspectAnalysis[];
   createdAt: string;
 }
 

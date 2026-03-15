@@ -9,5 +9,7 @@ public interface ReviewService {
 
   ReviewResponse createReview(String userId, String username, CreateReviewRequest request);
 
+  ReviewResponse updateReview(String reviewId, String userId, CreateReviewRequest request);
+
   void deleteReview(String reviewId, String userId);
 }
