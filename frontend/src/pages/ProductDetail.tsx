@@ -9,6 +9,7 @@ import {
   Shield,
   ShoppingCart,
   Star,
+  SquarePen,
   Trash2,
   Truck,
   X,
@@ -16,15 +17,16 @@ import {
 import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import ProductCard from '@/components/ui/ProductCard';
 import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
 import type { ApiResponse, PaginatedResponse } from '@/api/types';
-import type { Product } from '@/types/product';
-import type { Review, CreateReviewPayload } from '@/types/review';
-import { useWishlistStore } from '@/store/useWishlistStore';
-import { useCartStore } from '@/store/useCartStore';
+import ProductCard from '@/components/ui/ProductCard';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useCartStore } from '@/store/useCartStore';
+import { useWishlistStore } from '@/store/useWishlistStore';
+import type { AbsaResult } from '@/types/absa';
+import type { Product } from '@/types/product';
+import type { CreateReviewPayload, Review } from '@/types/review';
 
 export function Component() {
   const { id } = useParams<{ id: string }>();
@@ -37,7 +39,6 @@ export function Component() {
   const addToCart = useCartStore((s) => s.addItem);
   const { isLoggedIn, isAdmin, user } = useAuthStore();
 
-  // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
@@ -47,8 +48,16 @@ export function Component() {
   const [reviewError, setReviewError] = useState('');
   const [reviewImages, setReviewImages] = useState<string[]>([]);
   const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
 
   const myReview = reviews.find((r) => r.userId === user?.id);
+
+  useEffect(() => {
+    if (!myReview || editingReviewId) return;
+    setReviewRating(5);
+    setReviewComment('');
+    setReviewImages([]);
+  }, [myReview, editingReviewId]);
 
   useEffect(() => {
     if (!id) return;
@@ -56,19 +65,16 @@ export function Component() {
     apiClient
       .get<ApiResponse<Product>>(ENDPOINTS.PRODUCTS.BY_ID(id))
       .then((res) => {
-        const p = res.data.data;
-        setProduct(p);
+        const currentProduct = res.data.data;
+        setProduct(currentProduct);
         return apiClient
-          .get<ApiResponse<PaginatedResponse<Product>>>(
-            ENDPOINTS.PRODUCTS.BASE,
-            {
-              params: { size: 100 },
-            },
-          )
+          .get<ApiResponse<PaginatedResponse<Product>>>(ENDPOINTS.PRODUCTS.BASE, {
+            params: { size: 100 },
+          })
           .then((all) => {
             setRelated(
               all.data.data.content
-                .filter((r) => r.brand === p.brand && r.id !== p.id)
+                .filter((item) => item.brand === currentProduct.brand && item.id !== currentProduct.id)
                 .slice(0, 4),
             );
           });
@@ -96,20 +102,37 @@ export function Component() {
       setReviewError('Vui lòng đăng nhập để gửi đánh giá');
       return;
     }
+
     setReviewError('');
     setReviewSubmitting(true);
+
     try {
       const payload: CreateReviewPayload = {
         productId: id,
         rating: reviewRating,
-        comment: reviewComment,
+        comment: reviewComment.trim(),
         images: reviewImages.length > 0 ? reviewImages : undefined,
       };
-      const res = await apiClient.post<ApiResponse<Review>>(
-        ENDPOINTS.REVIEWS.BASE,
-        payload,
-      );
-      setReviews((prev) => [res.data.data, ...prev]);
+
+      if (editingReviewId) {
+        const res = await apiClient.put<ApiResponse<Review>>(
+          ENDPOINTS.REVIEWS.BY_ID(editingReviewId),
+          payload,
+        );
+        setReviews((prev) =>
+          prev.map((review) =>
+            review.id === editingReviewId ? res.data.data : review,
+          ),
+        );
+        setEditingReviewId(null);
+      } else {
+        const res = await apiClient.post<ApiResponse<Review>>(
+          ENDPOINTS.REVIEWS.BASE,
+          payload,
+        );
+        setReviews((prev) => [res.data.data, ...prev]);
+      }
+
       setReviewComment('');
       setReviewRating(5);
       setReviewImages([]);
@@ -127,10 +150,26 @@ export function Component() {
   const handleDeleteReview = async (reviewId: string) => {
     try {
       await apiClient.delete(ENDPOINTS.REVIEWS.BY_ID(reviewId));
-      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      setReviews((prev) => prev.filter((review) => review.id !== reviewId));
     } catch {
       // silent fail
     }
+  };
+
+  const handleStartEditReview = (review: Review) => {
+    setEditingReviewId(review.id);
+    setReviewRating(review.rating);
+    setReviewComment(review.comment);
+    setReviewImages(review.images ?? []);
+    setReviewError('');
+  };
+
+  const handleCancelEditReview = () => {
+    setEditingReviewId(null);
+    setReviewRating(5);
+    setReviewComment('');
+    setReviewImages([]);
+    setReviewError('');
   };
 
   if (loading) {
@@ -164,10 +203,34 @@ export function Component() {
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null;
 
+  const sentimentStyles: Record<AbsaResult['sentiment'], string> = {
+    positive: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    negative: 'border-amber-200 bg-amber-50 text-amber-700',
+    neutral: 'border-slate-200 bg-slate-50 text-slate-700',
+  };
+
+  const sentimentLabels: Record<AbsaResult['sentiment'], string> = {
+    positive: 'tốt',
+    negative: 'chưa tốt',
+    neutral: 'bình thường',
+  };
+
+  const aspectLabels: Record<string, string> = {
+    Battery: 'Pin',
+    Camera: 'Camera',
+    Performance: 'Hiệu năng',
+    Display: 'Màn hình',
+    Design: 'Thiết kế',
+    Packaging: 'Đóng gói',
+    Price: 'Giá',
+    Shop_Service: 'Dịch vụ cửa hàng',
+    Shipping: 'Giao hàng',
+    General: 'Tổng thể',
+  };
+
   return (
-    <div className="min-h-screen bg-surface pt-24 pb-16">
+    <div className="min-h-screen bg-surface pb-16 pt-24">
       <div className="mx-auto max-w-7xl px-6">
-        {/* Breadcrumb */}
         <motion.nav
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -175,14 +238,14 @@ export function Component() {
         >
           <Link
             to="/"
-            className="text-text-muted transition-colors hover:text-brand no-underline"
+            className="text-text-muted no-underline transition-colors hover:text-brand"
           >
             Trang chủ
           </Link>
           <span>/</span>
           <Link
             to="/products"
-            className="text-text-muted transition-colors hover:text-brand no-underline"
+            className="text-text-muted no-underline transition-colors hover:text-brand"
           >
             Sản phẩm
           </Link>
@@ -190,9 +253,7 @@ export function Component() {
           <span className="text-text-secondary">{product.name}</span>
         </motion.nav>
 
-        {/* Product detail */}
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-          {/* Image */}
           <motion.div
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
@@ -210,13 +271,12 @@ export function Component() {
             />
 
             {product.badge && (
-              <span className="absolute top-6 left-6 rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white">
+              <span className="absolute left-6 top-6 rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white">
                 {product.badge}
               </span>
             )}
           </motion.div>
 
-          {/* Info */}
           <motion.div
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
@@ -229,7 +289,6 @@ export function Component() {
               {product.name}
             </h1>
 
-            {/* Rating */}
             <div className="mt-3 flex items-center gap-2">
               <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -248,22 +307,18 @@ export function Component() {
               </span>
             </div>
 
-            {/* Specs */}
             {product.specs && (
-              <p className="mt-4 text-sm text-text-secondary">
-                {product.specs}
-              </p>
+              <p className="mt-4 text-sm text-text-secondary">{product.specs}</p>
             )}
 
-            {/* Price */}
             <div className="mt-6 flex items-end gap-3">
               <span className="font-display text-4xl font-bold text-brand">
-                {product.price.toLocaleString('vi-VN')}₫
+                {product.price.toLocaleString('vi-VN')}đ
               </span>
               {product.originalPrice && (
                 <>
                   <span className="text-lg text-text-muted line-through">
-                    {product.originalPrice.toLocaleString('vi-VN')}₫
+                    {product.originalPrice.toLocaleString('vi-VN')}đ
                   </span>
                   <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-bold text-white">
                     -{discount}%
@@ -272,43 +327,38 @@ export function Component() {
               )}
             </div>
 
-            {/* Color options (mock) */}
             <div className="mt-6">
               <p className="mb-2 text-sm font-medium text-text-secondary">
                 Màu sắc
               </p>
               <div className="flex gap-2">
-                {[
-                  'bg-zinc-800',
-                  'bg-zinc-400',
-                  'bg-amber-700',
-                  'bg-blue-900',
-                ].map((color, i) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className={`h-8 w-8 cursor-pointer rounded-full ${color} ring-2 ring-offset-2 ring-offset-surface transition-all ${
-                      i === 0
-                        ? 'ring-brand'
-                        : 'ring-transparent hover:ring-border-strong'
-                    }`}
-                  />
-                ))}
+                {['bg-zinc-800', 'bg-zinc-400', 'bg-amber-700', 'bg-blue-900'].map(
+                  (color, index) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`h-8 w-8 cursor-pointer rounded-full ${color} ring-2 ring-offset-2 ring-offset-surface transition-all ${
+                        index === 0
+                          ? 'ring-brand'
+                          : 'ring-transparent hover:ring-border-strong'
+                      }`}
+                    />
+                  ),
+                )}
               </div>
             </div>
 
-            {/* Storage (mock) */}
             <div className="mt-6">
               <p className="mb-2 text-sm font-medium text-text-secondary">
                 Dung lượng
               </p>
               <div className="flex gap-2">
-                {['128GB', '256GB', '512GB', '1TB'].map((size, i) => (
+                {['128GB', '256GB', '512GB', '1TB'].map((size, index) => (
                   <button
                     key={size}
                     type="button"
                     className={`cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
-                      i === 1
+                      index === 1
                         ? 'border-brand-accent bg-brand-subtle text-brand-accent'
                         : 'border-border bg-surface text-text-secondary hover:border-border-strong'
                     }`}
@@ -319,7 +369,6 @@ export function Component() {
               </div>
             </div>
 
-            {/* Stock info */}
             <div className="mt-6">
               {product.stock > 0 ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
@@ -333,13 +382,12 @@ export function Component() {
               )}
             </div>
 
-            {/* CTA - ẩn với admin */}
             {!isAdmin && product.stock > 0 && (
               <div className="mt-8 flex gap-3">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => product && addToCart(product)}
+                  onClick={() => addToCart(product)}
                   className="btn-primary flex flex-1 items-center justify-center gap-2 py-4"
                 >
                   <ShoppingCart className="h-5 w-5" />
@@ -349,10 +397,8 @@ export function Component() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    if (product) {
-                      addToCart(product);
-                      navigate('/checkout');
-                    }
+                    addToCart(product);
+                    navigate('/checkout');
                   }}
                   className="btn-outline px-6 py-4"
                 >
@@ -361,15 +407,13 @@ export function Component() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => product && toggleWishlist(product)}
-                  className={`flex aspect-square h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 transition-colors ${
+                  onClick={() => toggleWishlist(product)}
+                  className={`flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 transition-colors ${
                     isWishlisted
                       ? 'border-red-200 bg-red-50 text-red-500 hover:border-red-300 hover:bg-red-100'
                       : 'border-border bg-surface text-text-secondary hover:border-brand-accent hover:text-brand-accent'
                   }`}
-                  aria-label={
-                    isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'
-                  }
+                  aria-label={isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
                 >
                   <Heart
                     className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`}
@@ -378,26 +422,24 @@ export function Component() {
               </div>
             )}
 
-            {/* Services */}
             <div className="mt-8 grid grid-cols-3 gap-3">
               {[
                 { icon: Shield, label: 'Bảo hành 12 tháng' },
                 { icon: Truck, label: 'Miễn phí giao hàng' },
                 { icon: RotateCcw, label: 'Đổi trả 30 ngày' },
-              ].map((s) => (
+              ].map((item) => (
                 <div
-                  key={s.label}
+                  key={item.label}
                   className="flex flex-col items-center gap-1.5 rounded-xl bg-surface-alt p-3 text-center"
                 >
-                  <s.icon className="h-5 w-5 text-brand-accent" />
+                  <item.icon className="h-5 w-5 text-brand-accent" />
                   <span className="text-[11px] text-text-secondary">
-                    {s.label}
+                    {item.label}
                   </span>
                 </div>
               ))}
             </div>
 
-            {/* Highlights */}
             <div className="mt-8 card p-5">
               <h3 className="mb-3 font-display text-sm font-semibold text-brand">
                 Điểm nổi bật
@@ -423,7 +465,6 @@ export function Component() {
           </motion.div>
         </div>
 
-        {/* Reviews Section */}
         <section className="mt-20">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="font-display text-2xl font-bold text-brand">
@@ -434,8 +475,7 @@ export function Component() {
             </span>
           </div>
 
-          {/* Submit form - ẩn với admin */}
-          {isLoggedIn && !isAdmin && !myReview && (
+          {isLoggedIn && !isAdmin && (!myReview || editingReviewId) && (
             <motion.form
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -443,10 +483,9 @@ export function Component() {
               className="mb-8 rounded-2xl border border-border bg-surface p-6"
             >
               <p className="mb-4 font-medium text-text-primary">
-                Viết đánh giá của bạn
+                {editingReviewId ? 'Chỉnh sửa đánh giá của bạn' : 'Viết đánh giá của bạn'}
               </p>
 
-              {/* Star selector */}
               <div className="mb-4 flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -472,7 +511,6 @@ export function Component() {
                 </span>
               </div>
 
-              {/* Comment textarea */}
               <textarea
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
@@ -482,27 +520,27 @@ export function Component() {
                 required
                 className="w-full resize-none rounded-xl border border-border bg-surface-alt px-4 py-3 text-sm text-text-primary outline-none transition-colors placeholder:text-text-muted focus:border-brand focus:ring-1 focus:ring-brand"
               />
+
               <div className="mt-1 flex items-center justify-between">
                 <span className="text-xs text-text-muted">
                   {reviewComment.length}/1000
                 </span>
               </div>
 
-              {/* Review images */}
               <div className="mt-3">
                 <div className="flex flex-wrap gap-2">
-                  {reviewImages.map((url, i) => (
-                    <div key={i} className="relative">
+                  {reviewImages.map((url, index) => (
+                    <div key={index} className="relative">
                       <img
                         src={url}
-                        alt={`Review ${i + 1}`}
+                        alt={`Review ${index + 1}`}
                         className="h-20 w-20 rounded-lg border border-border object-cover"
                       />
                       <button
                         type="button"
                         onClick={() =>
                           setReviewImages((prev) =>
-                            prev.filter((_, j) => j !== i),
+                            prev.filter((_, imageIndex) => imageIndex !== index),
                           )
                         }
                         className="absolute -right-1.5 -top-1.5 cursor-pointer rounded-full bg-red-500 p-0.5 text-white hover:bg-red-600"
@@ -511,6 +549,7 @@ export function Component() {
                       </button>
                     </div>
                   ))}
+
                   {reviewImages.length < 5 && (
                     <label
                       className={`flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed transition-colors ${
@@ -542,13 +581,15 @@ export function Component() {
                           try {
                             const formData = new FormData();
                             formData.append('file', file);
-                            const res = await apiClient.post<
-                              ApiResponse<string>
-                            >(ENDPOINTS.REVIEWS.UPLOAD_IMAGE, formData, {
-                              headers: {
-                                'Content-Type': 'multipart/form-data',
+                            const res = await apiClient.post<ApiResponse<string>>(
+                              ENDPOINTS.REVIEWS.UPLOAD_IMAGE,
+                              formData,
+                              {
+                                headers: {
+                                  'Content-Type': 'multipart/form-data',
+                                },
                               },
-                            });
+                            );
                             setReviewImages((prev) => [...prev, res.data.data]);
                           } catch {
                             setReviewError('Upload ảnh thất bại');
@@ -572,6 +613,17 @@ export function Component() {
               )}
 
               <div className="mt-4 flex justify-end">
+                {editingReviewId && (
+                  <motion.button
+                    type="button"
+                    onClick={handleCancelEditReview}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="mr-3 cursor-pointer rounded-xl border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:border-border-strong hover:text-text-primary"
+                  >
+                    Hủy
+                  </motion.button>
+                )}
                 <motion.button
                   type="submit"
                   disabled={reviewSubmitting || !reviewComment.trim()}
@@ -584,7 +636,7 @@ export function Component() {
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  Gửi đánh giá
+                  {editingReviewId ? 'Lưu thay đổi' : 'Gửi đánh giá'}
                 </motion.button>
               </div>
             </motion.form>
@@ -593,10 +645,7 @@ export function Component() {
           {!isLoggedIn && (
             <div className="mb-8 rounded-2xl border border-border bg-surface-alt px-6 py-5 text-center">
               <p className="text-sm text-text-secondary">
-                <Link
-                  to="/login"
-                  className="font-medium text-brand hover:underline"
-                >
+                <Link to="/login" className="font-medium text-brand hover:underline">
                   Đăng nhập
                 </Link>{' '}
                 để viết đánh giá sản phẩm.
@@ -604,7 +653,24 @@ export function Component() {
             </div>
           )}
 
-          {/* Reviews list */}
+          {isLoggedIn && !isAdmin && myReview && !editingReviewId && (
+            <div className="mb-8 rounded-2xl border border-border bg-surface-alt px-6 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-text-secondary">
+                  Bạn đã gửi đánh giá cho sản phẩm này.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleStartEditReview(myReview)}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:border-brand hover:text-brand"
+                >
+                  <SquarePen className="h-4 w-4" />
+                  Chỉnh sửa đánh giá
+                </button>
+              </div>
+            </div>
+          )}
+
           {reviewsLoading ? (
             <div className="flex justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
@@ -630,25 +696,18 @@ export function Component() {
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/10 font-semibold text-brand">
                         {review.username.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-text-primary">
-                          {review.username}
-                        </p>
-                        <p className="text-xs text-text-muted">
-                          {new Date(review.createdAt).toLocaleDateString(
-                            'vi-VN',
-                          )}
-                        </p>
-                      </div>
+                      <p className="text-sm font-semibold text-text-primary">
+                        {review.username}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
+                        {[1, 2, 3, 4, 5].map((star) => (
                           <Star
-                            key={s}
+                            key={star}
                             className={`h-3.5 w-3.5 ${
-                              s <= review.rating
+                              star <= review.rating
                                 ? 'fill-amber-400 text-amber-400'
                                 : 'fill-transparent text-text-muted'
                             }`}
@@ -656,14 +715,24 @@ export function Component() {
                         ))}
                       </div>
                       {review.userId === user?.id && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteReview(review.id)}
-                          className="cursor-pointer rounded-lg p-1.5 text-text-muted transition-colors hover:bg-red-50 hover:text-red-500"
-                          aria-label="Xóa đánh giá"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditReview(review)}
+                            className="cursor-pointer rounded-lg p-1.5 text-text-muted transition-colors hover:bg-blue-50 hover:text-blue-500"
+                            aria-label="Sửa đánh giá"
+                          >
+                            <SquarePen className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReview(review.id)}
+                            className="cursor-pointer rounded-lg p-1.5 text-text-muted transition-colors hover:bg-red-50 hover:text-red-500"
+                            aria-label="Xóa đánh giá"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -671,18 +740,36 @@ export function Component() {
                   <p className="mt-3 text-sm leading-relaxed text-text-secondary">
                     {review.comment}
                   </p>
+
+                  {review.analysisResults && review.analysisResults.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {review.analysisResults.map((result) => (
+                        <div
+                          key={`${review.id}-${result.aspect}-${result.sentiment}`}
+                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium shadow-sm ${sentimentStyles[result.sentiment]}`}
+                        >
+                          <span className="text-text-primary">
+                            {aspectLabels[result.aspect] ?? result.aspect}
+                          </span>
+                          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+                          <span>{sentimentLabels[result.sentiment]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {review.images && review.images.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {review.images.map((img, i) => (
+                      {review.images.map((img, index) => (
                         <a
-                          key={i}
+                          key={index}
                           href={img}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
                           <img
                             src={img}
-                            alt={`Review ảnh ${i + 1}`}
+                            alt={`Review ảnh ${index + 1}`}
                             className="h-20 w-20 rounded-lg border border-border object-cover transition-transform hover:scale-105"
                           />
                         </a>
@@ -695,15 +782,14 @@ export function Component() {
           )}
         </section>
 
-        {/* Related products */}
         {related.length > 0 && (
           <section className="mt-24">
             <h2 className="mb-8 font-display text-2xl font-bold text-brand">
               Sản phẩm cùng thương hiệu
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {related.map((p, i) => (
-                <ProductCard key={p.id} product={p} index={i} />
+              {related.map((item, index) => (
+                <ProductCard key={item.id} product={item} index={index} />
               ))}
             </div>
           </section>

@@ -30,4 +30,6 @@ public class Review extends BaseDocument {
   private String comment;
 
   private List<String> images;
+
+  private List<ReviewAspectAnalysis> analysisResults;
 }
