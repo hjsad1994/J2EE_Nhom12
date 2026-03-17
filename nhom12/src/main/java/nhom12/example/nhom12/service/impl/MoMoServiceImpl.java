@@ -196,11 +196,15 @@ public class MoMoServiceImpl implements MoMoService {
 
     Order order =
         mongoTemplate.findAndModify(
-            pendingOrderQuery, update, FindAndModifyOptions.options().returnNew(false), Order.class);
+            pendingOrderQuery,
+            update,
+            FindAndModifyOptions.options().returnNew(false),
+            Order.class);
 
     if (order == null) {
       log.info(
-          "[MoMo] Skip callback for orderId={} because it was already processed or no longer pending",
+          "[MoMo] Skip callback for orderId={} because it was already processed or no longer"
+              + " pending",
           orderId);
       return;
     }
@@ -218,7 +222,6 @@ public class MoMoServiceImpl implements MoMoService {
           resultCode,
           message);
     }
-
   }
 
   private void restoreStock(Order order) {
