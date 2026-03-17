@@ -7,7 +7,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import apiClient from '@/api/client';
@@ -30,6 +30,11 @@ function Checkout() {
   const totalPrice = useCartStore((s) => s.totalPrice());
   const clear = useCartStore((s) => s.clear);
   const { user } = useAuthStore();
+  const idempotencyKeyRef = useRef(
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  );
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -70,6 +75,7 @@ function Checkout() {
       district: fd.get('district') as string,
       ward: fd.get('ward') as string,
       note: (fd.get('note') as string) || undefined,
+      idempotencyKey: idempotencyKeyRef.current,
       paymentMethod,
       items: items.map(({ product, quantity }) => ({
         productId: product.id,
@@ -87,7 +93,6 @@ function Checkout() {
         payload,
       );
       const orderId = res.data.data.id;
-      clear();
 
       if (paymentMethod === 'MOMO') {
         // Get MoMo payment URL then redirect browser to it
@@ -96,12 +101,16 @@ function Checkout() {
         );
         window.location.href = momoRes.data.data.payUrl;
       } else {
+        clear();
         navigate('/checkout/success', {
           state: { fromCheckout: true, orderId },
         });
       }
-    } catch {
-      setError('Đặt hàng thất bại. Vui lòng thử lại.');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setError(
+        axiosErr.response?.data?.message ?? 'Đặt hàng thất bại. Vui lòng thử lại.',
+      );
     } finally {
       setLoading(false);
     }

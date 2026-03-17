@@ -92,6 +92,14 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   CANCELLED: [],
 };
 
+const getAvailableTransitions = (order: Order): OrderStatus[] => {
+  const transitions = VALID_TRANSITIONS[order.status];
+  if (order.paymentStatus === 'PAID') {
+    return transitions.filter((status) => status !== 'CANCELLED');
+  }
+  return transitions;
+};
+
 const emptyCategoryForm: CreateCategoryPayload = {
   name: '',
   description: '',
@@ -1426,7 +1434,7 @@ export function Component() {
                             )}
                           </td>
                           <td className="px-5 py-4">
-                            {VALID_TRANSITIONS[o.status].length > 0 ? (
+                            {getAvailableTransitions(o).length > 0 ? (
                               <select
                                 value=""
                                 onChange={(e) => {
@@ -1440,7 +1448,7 @@ export function Component() {
                                 className="cursor-pointer rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 shadow-sm outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
                               >
                                 <option value="">Chuyển trạng thái...</option>
-                                {VALID_TRANSITIONS[o.status].map((s) => (
+                                {getAvailableTransitions(o).map((s) => (
                                   <option key={s} value={s}>
                                     {ORDER_STATUS_LABEL[s]}
                                   </option>

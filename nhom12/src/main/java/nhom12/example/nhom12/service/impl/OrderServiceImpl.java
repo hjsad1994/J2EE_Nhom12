@@ -136,13 +136,23 @@ public class OrderServiceImpl implements OrderService {
     // This catches cases where the same idempotency key is reused (client retry on network error).
     try {
       Order saved = orderRepository.save(order);
-      // Send confirmation email asynchronously (@Async) — does not block or affect this transaction
-      emailService.sendOrderConfirmationEmail(
-          saved.getEmail(), saved.getCustomerName(), saved.getOrderCode(), saved.getTotal());
+      // COD orders are confirmed immediately by store workflow; MoMo orders will only send
+      // confirmation after the gateway reports a successful payment.
+      if (!"MOMO".equalsIgnoreCase(saved.getPaymentMethod())) {
+        emailService.sendOrderConfirmationEmail(
+            saved.getEmail(), saved.getCustomerName(), saved.getOrderCode(), saved.getTotal());
+      }
       return toResponse(saved);
     } catch (DuplicateKeyException e) {
-      throw new BadRequestException(
-          "Đơn hàng với mã '" + orderCode + "' đã tồn tại. Yêu cầu này đã được xử lý trước đó.");
+      return orderRepository
+          .findByOrderCode(orderCode)
+          .map(this::toResponse)
+          .orElseThrow(
+              () ->
+                  new BadRequestException(
+                      "Đơn hàng với mã '"
+                          + orderCode
+                          + "' đã tồn tại. Yêu cầu này đã được xử lý trước đó."));
     }
   }
 
@@ -201,7 +211,11 @@ public class OrderServiceImpl implements OrderService {
 
     // Restore stock when order is cancelled (atomic within this transaction)
     if (newStatus == OrderStatus.CANCELLED) {
+      if ("PAID".equals(order.getPaymentStatus())) {
+        throw new BadRequestException("Đơn hàng đã thanh toán. Hãy hoàn tiền trước khi hủy.");
+      }
       restoreStock(order);
+      order.setPaymentStatus("FAILED");
       order.setCancelledBy("ADMIN");
       order.setCancelReason("Hủy bởi quản trị viên");
     }
@@ -250,6 +264,10 @@ public class OrderServiceImpl implements OrderService {
           "Chỉ có thể hủy đơn hàng chưa được giao cho đơn vị vận chuyển. "
               + "Trạng thái hiện tại: "
               + order.getStatus());
+    }
+
+    if ("PAID".equals(order.getPaymentStatus())) {
+      throw new BadRequestException("Đơn hàng đã thanh toán và cần hoàn tiền trước khi hủy.");
     }
 
     // Restore stock (atomic within this transaction)

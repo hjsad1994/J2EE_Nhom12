@@ -10,6 +10,7 @@ import nhom12.example.nhom12.dto.response.ApiResponse;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Order;
 import nhom12.example.nhom12.model.User;
+import nhom12.example.nhom12.model.enums.OrderStatus;
 import nhom12.example.nhom12.repository.OrderRepository;
 import nhom12.example.nhom12.repository.UserRepository;
 import nhom12.example.nhom12.service.MoMoService;
@@ -64,6 +65,15 @@ public class MoMoController {
                   .build());
     }
 
+    if (!"MOMO".equalsIgnoreCase(order.getPaymentMethod())) {
+      return ResponseEntity.badRequest()
+          .body(
+              ApiResponse.<Map<String, String>>builder()
+                  .status(400)
+                  .message("Order is not using MoMo payment")
+                  .build());
+    }
+
     // Prevent duplicate payments
     if ("PAID".equals(order.getPaymentStatus())) {
       return ResponseEntity.badRequest()
@@ -71,6 +81,15 @@ public class MoMoController {
               ApiResponse.<Map<String, String>>builder()
                   .status(400)
                   .message("Order has already been paid")
+                  .build());
+    }
+
+    if ("FAILED".equals(order.getPaymentStatus()) || order.getStatus() == OrderStatus.CANCELLED) {
+      return ResponseEntity.badRequest()
+          .body(
+              ApiResponse.<Map<String, String>>builder()
+                  .status(400)
+                  .message("Order is no longer payable")
                   .build());
     }
 
