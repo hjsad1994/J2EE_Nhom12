@@ -7,6 +7,7 @@ import nhom12.example.nhom12.model.Product;
 import nhom12.example.nhom12.model.ProductVariant;
 import nhom12.example.nhom12.repository.CategoryRepository;
 import nhom12.example.nhom12.repository.ProductRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,9 @@ public class DataSeeder implements CommandLineRunner {
 
   private final ProductRepository productRepository;
   private final CategoryRepository categoryRepository;
+
+  @Value("${app.seed.enabled:true}")
+  private boolean seedEnabled;
 
   private static ProductVariant v(String color, String storage, double price, int stock) {
     return ProductVariant.builder().color(color).storage(storage).price(price).stock(stock).build();
@@ -28,6 +32,10 @@ public class DataSeeder implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
+    if (!seedEnabled) {
+      return;
+    }
+
     if (productRepository.count() > 0) {
       return;
     }
