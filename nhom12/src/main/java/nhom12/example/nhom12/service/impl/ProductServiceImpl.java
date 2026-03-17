@@ -33,9 +33,9 @@ public class ProductServiceImpl implements ProductService {
   private final ProductMapper productMapper;
 
   /**
-   * Creates a product with its initial stock atomically. The @Transactional annotation ensures
-   * that if anything fails during product creation (e.g., validation, Cloudinary image save),
-   * the partial state is rolled back and no incomplete product is persisted.
+   * Creates a product with its initial stock atomically. The @Transactional annotation ensures that
+   * if anything fails during product creation (e.g., validation, Cloudinary image save), the
+   * partial state is rolled back and no incomplete product is persisted.
    */
   @Override
   @Transactional

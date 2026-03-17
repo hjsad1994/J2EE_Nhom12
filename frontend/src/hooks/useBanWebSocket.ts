@@ -29,7 +29,10 @@ export function useBanWebSocket() {
       reconnectDelay: 5000,
       onConnect: () => {
         client.subscribe(`/user/queue/ban-status`, (message) => {
-          const data = JSON.parse(message.body) as { banned: boolean; message: string };
+          const data = JSON.parse(message.body) as {
+            banned: boolean;
+            message: string;
+          };
 
           if (data.banned) {
             // Show warning toast then force logout

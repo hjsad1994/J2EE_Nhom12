@@ -155,8 +155,8 @@ public class MoMoServiceImpl implements MoMoService {
    *   <li>Failure: marks order FAILED + CANCELLED AND restores stock — both in one transaction.
    * </ul>
    *
-   * Without @Transactional, a crash between updating the order and restoring stock would leave
-   * the system in an inconsistent state (cancelled order but stock not restored).
+   * Without @Transactional, a crash between updating the order and restoring stock would leave the
+   * system in an inconsistent state (cancelled order but stock not restored).
    */
   @Override
   @Transactional

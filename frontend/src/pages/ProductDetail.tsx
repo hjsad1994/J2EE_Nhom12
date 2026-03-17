@@ -223,7 +223,9 @@ export function Component() {
         ) ?? null)
       : null;
 
-  const effectivePrice = selectedVariant ? selectedVariant.price : product.price;
+  const effectivePrice = selectedVariant
+    ? selectedVariant.price
+    : product.price;
   // -1 means variants exist but none selected yet
   const effectiveStock = hasVariants
     ? selectedVariant
@@ -233,12 +235,17 @@ export function Component() {
 
   const canAddToCart =
     effectiveStock > 0 &&
-    (!hasVariants || (selectedColor !== '' && selectedStorage !== '' && selectedVariant !== null));
+    (!hasVariants ||
+      (selectedColor !== '' &&
+        selectedStorage !== '' &&
+        selectedVariant !== null));
 
   const handleColorSelect = (color: string) => {
     setSelectedColor(color);
     const storagesForColor =
-      product.variants?.filter((v) => v.color === color).map((v) => v.storage) ?? [];
+      product.variants
+        ?.filter((v) => v.color === color)
+        .map((v) => v.storage) ?? [];
     if (selectedStorage && !storagesForColor.includes(selectedStorage)) {
       setSelectedStorage('');
     }
@@ -407,7 +414,8 @@ export function Component() {
                       const isAvailable =
                         !selectedColor ||
                         product.variants!.some(
-                          (v) => v.color === selectedColor && v.storage === storage,
+                          (v) =>
+                            v.color === selectedColor && v.storage === storage,
                         );
                       return (
                         <button
@@ -435,7 +443,8 @@ export function Component() {
                 )}
                 {(!selectedColor || !selectedStorage) && (
                   <p className="mt-3 text-sm text-amber-600">
-                    Vui lòng chọn màu sắc và dung lượng để xem giá và tình trạng hàng.
+                    Vui lòng chọn màu sắc và dung lượng để xem giá và tình trạng
+                    hàng.
                   </p>
                 )}
               </>
@@ -454,57 +463,77 @@ export function Component() {
               )}
             </div>
 
-            {!isAdmin && (effectiveStock > 0 || (hasVariants && effectiveStock === -1)) && (
-              <div className="mt-8 flex gap-3">
-                <motion.button
-                  whileHover={{ scale: canAddToCart ? 1.02 : 1 }}
-                  whileTap={{ scale: canAddToCart ? 0.98 : 1 }}
-                  disabled={!canAddToCart}
-                  onClick={() => {
-                    if (!isLoggedIn) { navigate('/login'); return; }
-                    if (canAddToCart) addToCart({ ...product, price: effectivePrice, stock: effectiveStock });
-                  }}
-                  className="btn-primary flex flex-1 items-center justify-center gap-2 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  Thêm vào giỏ hàng
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: canAddToCart ? 1.02 : 1 }}
-                  whileTap={{ scale: canAddToCart ? 0.98 : 1 }}
-                  disabled={!canAddToCart}
-                  onClick={() => {
-                    if (!isLoggedIn) { navigate('/login'); return; }
-                    if (!canAddToCart) return;
-                    addToCart({ ...product, price: effectivePrice, stock: effectiveStock });
-                    navigate('/checkout');
-                  }}
-                  className="btn-outline px-6 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Mua ngay
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    if (!isLoggedIn) { navigate('/login'); return; }
-                    toggleWishlist(product);
-                  }}
-                  className={`flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 transition-colors ${
-                    isWishlisted
-                      ? 'border-red-200 bg-red-50 text-red-500 hover:border-red-300 hover:bg-red-100'
-                      : 'border-border bg-surface text-text-secondary hover:border-brand-accent hover:text-brand-accent'
-                  }`}
-                  aria-label={
-                    isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'
-                  }
-                >
-                  <Heart
-                    className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`}
-                  />
-                </motion.button>
-              </div>
-            )}
+            {!isAdmin &&
+              (effectiveStock > 0 ||
+                (hasVariants && effectiveStock === -1)) && (
+                <div className="mt-8 flex gap-3">
+                  <motion.button
+                    whileHover={{ scale: canAddToCart ? 1.02 : 1 }}
+                    whileTap={{ scale: canAddToCart ? 0.98 : 1 }}
+                    disabled={!canAddToCart}
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        navigate('/login');
+                        return;
+                      }
+                      if (canAddToCart)
+                        addToCart({
+                          ...product,
+                          price: effectivePrice,
+                          stock: effectiveStock,
+                        });
+                    }}
+                    className="btn-primary flex flex-1 items-center justify-center gap-2 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    Thêm vào giỏ hàng
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: canAddToCart ? 1.02 : 1 }}
+                    whileTap={{ scale: canAddToCart ? 0.98 : 1 }}
+                    disabled={!canAddToCart}
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        navigate('/login');
+                        return;
+                      }
+                      if (!canAddToCart) return;
+                      addToCart({
+                        ...product,
+                        price: effectivePrice,
+                        stock: effectiveStock,
+                      });
+                      navigate('/checkout');
+                    }}
+                    className="btn-outline px-6 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Mua ngay
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        navigate('/login');
+                        return;
+                      }
+                      toggleWishlist(product);
+                    }}
+                    className={`flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 transition-colors ${
+                      isWishlisted
+                        ? 'border-red-200 bg-red-50 text-red-500 hover:border-red-300 hover:bg-red-100'
+                        : 'border-border bg-surface text-text-secondary hover:border-brand-accent hover:text-brand-accent'
+                    }`}
+                    aria-label={
+                      isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'
+                    }
+                  >
+                    <Heart
+                      className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`}
+                    />
+                  </motion.button>
+                </div>
+              )}
 
             <div className="mt-8 grid grid-cols-3 gap-3">
               {[

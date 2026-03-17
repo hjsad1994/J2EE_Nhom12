@@ -83,8 +83,7 @@ public class OrderServiceImpl implements OrderService {
             productRepository
                 .findById(itemReq.getProductId())
                 .orElseThrow(
-                    () ->
-                        new ResourceNotFoundException("Product", "id", itemReq.getProductId()));
+                    () -> new ResourceNotFoundException("Product", "id", itemReq.getProductId()));
 
         if (product.getStock() < itemReq.getQuantity()) {
           throw new BadRequestException(
@@ -96,7 +95,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // Deduct stock — if a concurrent order modified this product between our read and this
-        // save, MongoDB will detect the @Version mismatch and throw OptimisticLockingFailureException
+        // save, MongoDB will detect the @Version mismatch and throw
+        // OptimisticLockingFailureException
         product.setStock(product.getStock() - itemReq.getQuantity());
         productRepository.save(product);
 
@@ -104,8 +104,7 @@ public class OrderServiceImpl implements OrderService {
       }
     } catch (OptimisticLockingFailureException e) {
       // Another request updated the product's stock concurrently (e.g., Flash Sale)
-      throw new BadRequestException(
-          "Sản phẩm vừa được cập nhật bởi người khác. Vui lòng thử lại.");
+      throw new BadRequestException("Sản phẩm vừa được cập nhật bởi người khác. Vui lòng thử lại.");
     }
 
     double subtotal = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
@@ -143,9 +142,7 @@ public class OrderServiceImpl implements OrderService {
       return toResponse(saved);
     } catch (DuplicateKeyException e) {
       throw new BadRequestException(
-          "Đơn hàng với mã '"
-              + orderCode
-              + "' đã tồn tại. Yêu cầu này đã được xử lý trước đó.");
+          "Đơn hàng với mã '" + orderCode + "' đã tồn tại. Yêu cầu này đã được xử lý trước đó.");
     }
   }
 

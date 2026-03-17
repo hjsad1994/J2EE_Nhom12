@@ -18,12 +18,7 @@ public class DataSeeder implements CommandLineRunner {
   private final CategoryRepository categoryRepository;
 
   private static ProductVariant v(String color, String storage, double price, int stock) {
-    return ProductVariant.builder()
-        .color(color)
-        .storage(storage)
-        .price(price)
-        .stock(stock)
-        .build();
+    return ProductVariant.builder().color(color).storage(storage).price(price).stock(stock).build();
   }
 
   @Override
@@ -85,12 +80,12 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Titan Đen",    "256GB", 34990000, 30),
-                        v("Titan Đen",    "512GB", 39990000, 20),
-                        v("Titan Đen",    "1TB",   44990000, 10),
-                        v("Titan Trắng",  "256GB", 34990000, 25),
-                        v("Titan Trắng",  "512GB", 39990000, 15),
-                        v("Titan Trắng",  "1TB",   44990000,  8),
+                        v("Titan Đen", "256GB", 34990000, 30),
+                        v("Titan Đen", "512GB", 39990000, 20),
+                        v("Titan Đen", "1TB", 44990000, 10),
+                        v("Titan Trắng", "256GB", 34990000, 25),
+                        v("Titan Trắng", "512GB", 39990000, 15),
+                        v("Titan Trắng", "1TB", 44990000, 8),
                         v("Titan Sa Mạc", "256GB", 34990000, 20),
                         v("Titan Sa Mạc", "512GB", 39990000, 12)))
                 .build(),
@@ -109,11 +104,11 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Titan Đen",    "128GB", 28990000, 35),
-                        v("Titan Đen",    "256GB", 31990000, 20),
-                        v("Titan Đen",    "512GB", 36990000, 10),
-                        v("Titan Trắng",  "128GB", 28990000, 30),
-                        v("Titan Trắng",  "256GB", 31990000, 18),
+                        v("Titan Đen", "128GB", 28990000, 35),
+                        v("Titan Đen", "256GB", 31990000, 20),
+                        v("Titan Đen", "512GB", 36990000, 10),
+                        v("Titan Trắng", "128GB", 28990000, 30),
+                        v("Titan Trắng", "256GB", 31990000, 18),
                         v("Titan Sa Mạc", "128GB", 28990000, 25),
                         v("Titan Sa Mạc", "256GB", 31990000, 15)))
                 .build(),
@@ -131,14 +126,14 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Đen",    "128GB", 22990000, 40),
-                        v("Đen",    "256GB", 25990000, 25),
-                        v("Trắng",  "128GB", 22990000, 35),
-                        v("Trắng",  "256GB", 25990000, 20),
-                        v("Hồng",   "128GB", 22990000, 30),
-                        v("Hồng",   "256GB", 25990000, 15),
-                        v("Xanh",   "128GB", 22990000, 25),
-                        v("Xanh",   "256GB", 25990000, 10)))
+                        v("Đen", "128GB", 22990000, 40),
+                        v("Đen", "256GB", 25990000, 25),
+                        v("Trắng", "128GB", 22990000, 35),
+                        v("Trắng", "256GB", 25990000, 20),
+                        v("Hồng", "128GB", 22990000, 30),
+                        v("Hồng", "256GB", 25990000, 15),
+                        v("Xanh", "128GB", 22990000, 25),
+                        v("Xanh", "256GB", 25990000, 10)))
                 .build(),
 
             // 4. Samsung Galaxy S25 Ultra
@@ -155,12 +150,12 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Titan Bạc",  "256GB", 31990000, 25),
-                        v("Titan Bạc",  "512GB", 36990000, 15),
-                        v("Titan Bạc",  "1TB",   41990000,  8),
-                        v("Titan Đen",  "256GB", 31990000, 20),
-                        v("Titan Đen",  "512GB", 36990000, 12),
-                        v("Titan Đen",  "1TB",   41990000,  5),
+                        v("Titan Bạc", "256GB", 31990000, 25),
+                        v("Titan Bạc", "512GB", 36990000, 15),
+                        v("Titan Bạc", "1TB", 41990000, 8),
+                        v("Titan Đen", "256GB", 31990000, 20),
+                        v("Titan Đen", "512GB", 36990000, 12),
+                        v("Titan Đen", "1TB", 41990000, 5),
                         v("Titan Xanh", "256GB", 31990000, 18),
                         v("Titan Xanh", "512GB", 36990000, 10)))
                 .build(),
@@ -179,10 +174,10 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Bạc",       "256GB", 24990000, 30),
-                        v("Bạc",       "512GB", 29990000, 15),
-                        v("Đen",       "256GB", 24990000, 25),
-                        v("Đen",       "512GB", 29990000, 12),
+                        v("Bạc", "256GB", 24990000, 30),
+                        v("Bạc", "512GB", 29990000, 15),
+                        v("Đen", "256GB", 24990000, 25),
+                        v("Đen", "512GB", 29990000, 12),
                         v("Xanh Navy", "256GB", 24990000, 20),
                         v("Xanh Navy", "512GB", 29990000, 10)))
                 .build(),
@@ -201,12 +196,12 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Đen",   "128GB",  9990000, 50),
-                        v("Đen",   "256GB", 11990000, 30),
-                        v("Xanh",  "128GB",  9990000, 45),
-                        v("Xanh",  "256GB", 11990000, 25),
-                        v("Tím",   "128GB",  9990000, 40),
-                        v("Tím",   "256GB", 11990000, 20)))
+                        v("Đen", "128GB", 9990000, 50),
+                        v("Đen", "256GB", 11990000, 30),
+                        v("Xanh", "128GB", 9990000, 45),
+                        v("Xanh", "256GB", 11990000, 25),
+                        v("Tím", "128GB", 9990000, 40),
+                        v("Tím", "256GB", 11990000, 20)))
                 .build(),
 
             // 7. Google Pixel 9 Pro
@@ -222,14 +217,14 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Đen Bóng",    "128GB", 24990000, 20),
-                        v("Đen Bóng",    "256GB", 27990000, 15),
-                        v("Đen Bóng",    "512GB", 32990000,  8),
-                        v("Trắng Sứ",    "128GB", 24990000, 18),
-                        v("Trắng Sứ",    "256GB", 27990000, 12),
+                        v("Đen Bóng", "128GB", 24990000, 20),
+                        v("Đen Bóng", "256GB", 27990000, 15),
+                        v("Đen Bóng", "512GB", 32990000, 8),
+                        v("Trắng Sứ", "128GB", 24990000, 18),
+                        v("Trắng Sứ", "256GB", 27990000, 12),
                         v("Xanh Mã Não", "128GB", 24990000, 15),
                         v("Xanh Mã Não", "256GB", 27990000, 10),
-                        v("Hồng",        "128GB", 24990000, 12)))
+                        v("Hồng", "128GB", 24990000, 12)))
                 .build(),
 
             // 8. Google Pixel 9
@@ -245,10 +240,10 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Đen",      "128GB", 18990000, 30),
-                        v("Đen",      "256GB", 21990000, 18),
-                        v("Trắng",    "128GB", 18990000, 25),
-                        v("Trắng",    "256GB", 21990000, 15),
+                        v("Đen", "128GB", 18990000, 30),
+                        v("Đen", "256GB", 21990000, 18),
+                        v("Trắng", "128GB", 18990000, 25),
+                        v("Trắng", "256GB", 21990000, 15),
                         v("Hồng Sen", "128GB", 18990000, 20),
                         v("Hồng Sen", "256GB", 21990000, 12)))
                 .build(),
@@ -267,8 +262,8 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Đen",   "256GB", 22990000, 25),
-                        v("Đen",   "512GB", 27990000, 15),
+                        v("Đen", "256GB", 22990000, 25),
+                        v("Đen", "512GB", 27990000, 15),
                         v("Trắng", "256GB", 22990000, 20),
                         v("Trắng", "512GB", 27990000, 12)))
                 .build(),
@@ -286,12 +281,12 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Đen",   "256GB", 16990000, 30),
-                        v("Đen",   "512GB", 20990000, 18),
+                        v("Đen", "256GB", 16990000, 30),
+                        v("Đen", "512GB", 20990000, 18),
                         v("Trắng", "256GB", 16990000, 25),
                         v("Trắng", "512GB", 20990000, 15),
-                        v("Xanh",  "256GB", 16990000, 20),
-                        v("Xanh",  "512GB", 20990000, 10)))
+                        v("Xanh", "256GB", 16990000, 20),
+                        v("Xanh", "512GB", 20990000, 10)))
                 .build(),
 
             // 11. OPPO Find X8 Pro
@@ -307,8 +302,8 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Đen",   "256GB", 23990000, 20),
-                        v("Đen",   "512GB", 27990000, 12),
+                        v("Đen", "256GB", 23990000, 20),
+                        v("Đen", "512GB", 27990000, 12),
                         v("Trắng", "256GB", 23990000, 18),
                         v("Trắng", "512GB", 27990000, 10)))
                 .build(),
@@ -328,8 +323,8 @@ public class DataSeeder implements CommandLineRunner {
                     List.of(
                         v("Đen Huyền Bí", "256GB", 20990000, 25),
                         v("Đen Huyền Bí", "512GB", 24990000, 15),
-                        v("Trắng Tuyết",  "256GB", 20990000, 20),
-                        v("Trắng Tuyết",  "512GB", 24990000, 12)))
+                        v("Trắng Tuyết", "256GB", 20990000, 20),
+                        v("Trắng Tuyết", "512GB", 24990000, 12)))
                 .build(),
 
             // 13. Vivo X200 Pro
@@ -345,8 +340,8 @@ public class DataSeeder implements CommandLineRunner {
                 .stock(0)
                 .variants(
                     List.of(
-                        v("Đen",  "256GB", 23990000, 20),
-                        v("Đen",  "512GB", 27990000, 12),
+                        v("Đen", "256GB", 23990000, 20),
+                        v("Đen", "512GB", 27990000, 12),
                         v("Xanh", "256GB", 23990000, 18),
                         v("Xanh", "512GB", 27990000, 10)))
                 .build(),
@@ -367,8 +362,8 @@ public class DataSeeder implements CommandLineRunner {
                     List.of(
                         v("Đen Vũ Trụ", "256GB", 14990000, 30),
                         v("Đen Vũ Trụ", "512GB", 17990000, 20),
-                        v("Xám Titan",  "256GB", 14990000, 25),
-                        v("Xám Titan",  "512GB", 17990000, 15)))
+                        v("Xám Titan", "256GB", 14990000, 25),
+                        v("Xám Titan", "512GB", 17990000, 15)))
                 .build(),
 
             // 15. Samsung Galaxy Z Fold 6
@@ -386,11 +381,11 @@ public class DataSeeder implements CommandLineRunner {
                 .variants(
                     List.of(
                         v("Xanh Navy", "256GB", 44990000, 15),
-                        v("Xanh Navy", "512GB", 49990000,  8),
-                        v("Bạc",       "256GB", 44990000, 12),
-                        v("Bạc",       "512GB", 49990000,  6),
-                        v("Hồng",      "256GB", 44990000, 10),
-                        v("Hồng",      "512GB", 49990000,  5)))
+                        v("Xanh Navy", "512GB", 49990000, 8),
+                        v("Bạc", "256GB", 44990000, 12),
+                        v("Bạc", "512GB", 49990000, 6),
+                        v("Hồng", "256GB", 44990000, 10),
+                        v("Hồng", "512GB", 49990000, 5)))
                 .build());
 
     productRepository.saveAll(products);

@@ -95,8 +95,7 @@ public class UserController {
   @PatchMapping("/{id}/ban")
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<UserResponse>> toggleBan(
-      @PathVariable String id,
-      @AuthenticationPrincipal UserDetails principal) {
+      @PathVariable String id, @AuthenticationPrincipal UserDetails principal) {
     String requesterId = resolveUserId(principal);
     if (requesterId.equals(id)) {
       throw new nhom12.example.nhom12.exception.BadRequestException(

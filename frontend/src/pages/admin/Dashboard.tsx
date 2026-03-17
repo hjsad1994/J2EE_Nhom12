@@ -133,7 +133,9 @@ export function Component() {
     price: 0,
     stock: 0,
   });
-  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null);
+  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(
+    null,
+  );
   const [editingVariantData, setEditingVariantData] = useState<ProductVariant>({
     color: '',
     storage: '',
@@ -1094,9 +1096,13 @@ export function Component() {
                                 }`}
                               >
                                 {u.banned ? (
-                                  <><ShieldOff className="h-3 w-3" /> Mở khóa</>
+                                  <>
+                                    <ShieldOff className="h-3 w-3" /> Mở khóa
+                                  </>
                                 ) : (
-                                  <><Ban className="h-3 w-3" /> Khóa</>
+                                  <>
+                                    <Ban className="h-3 w-3" /> Khóa
+                                  </>
                                 )}
                               </button>
                             </div>
@@ -1469,7 +1475,10 @@ export function Component() {
       {/* ── Product Modal ── */}
       {showProductForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="flex w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl" style={{ maxHeight: '90vh' }}>
+          <div
+            className="flex w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl"
+            style={{ maxHeight: '90vh' }}
+          >
             <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
               <div>
                 <h3 className="font-bold text-gray-800">
@@ -1673,11 +1682,17 @@ export function Component() {
                             {(
                               [
                                 ['color', 'Màu', editingVariantData.color],
-                                ['storage', 'Dung lượng', editingVariantData.storage],
+                                [
+                                  'storage',
+                                  'Dung lượng',
+                                  editingVariantData.storage,
+                                ],
                               ] as [keyof ProductVariant, string, string][]
                             ).map(([field, label, val]) => (
                               <div key={field}>
-                                <p className="mb-0.5 text-[10px] font-semibold text-gray-400">{label}</p>
+                                <p className="mb-0.5 text-[10px] font-semibold text-gray-400">
+                                  {label}
+                                </p>
                                 <input
                                   type="text"
                                   value={val}
@@ -1698,7 +1713,9 @@ export function Component() {
                               ] as [keyof ProductVariant, string, number][]
                             ).map(([field, label, val]) => (
                               <div key={field}>
-                                <p className="mb-0.5 text-[10px] font-semibold text-gray-400">{label}</p>
+                                <p className="mb-0.5 text-[10px] font-semibold text-gray-400">
+                                  {label}
+                                </p>
                                 <input
                                   type="number"
                                   min="0"
@@ -1706,7 +1723,9 @@ export function Component() {
                                   onChange={(e) =>
                                     setEditingVariantData((prev) => ({
                                       ...prev,
-                                      [field]: e.target.value ? Number(e.target.value) : 0,
+                                      [field]: e.target.value
+                                        ? Number(e.target.value)
+                                        : 0,
                                     }))
                                   }
                                   className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
@@ -1786,7 +1805,10 @@ export function Component() {
                       placeholder="VD: Đen"
                       value={newVariant.color}
                       onChange={(e) =>
-                        setNewVariant((prev) => ({ ...prev, color: e.target.value }))
+                        setNewVariant((prev) => ({
+                          ...prev,
+                          color: e.target.value,
+                        }))
                       }
                       className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
                     />
@@ -1800,7 +1822,10 @@ export function Component() {
                       placeholder="VD: 128GB"
                       value={newVariant.storage}
                       onChange={(e) =>
-                        setNewVariant((prev) => ({ ...prev, storage: e.target.value }))
+                        setNewVariant((prev) => ({
+                          ...prev,
+                          storage: e.target.value,
+                        }))
                       }
                       className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
                     />
@@ -1845,7 +1870,9 @@ export function Component() {
                 <button
                   type="button"
                   onClick={handleAddVariant}
-                  disabled={!newVariant.color.trim() || !newVariant.storage.trim()}
+                  disabled={
+                    !newVariant.color.trim() || !newVariant.storage.trim()
+                  }
                   className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-600 hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Plus className="h-3.5 w-3.5" /> Thêm biến thể

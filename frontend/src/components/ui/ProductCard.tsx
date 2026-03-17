@@ -60,7 +60,10 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               e.preventDefault();
-              if (!isLoggedIn) { navigate('/login'); return; }
+              if (!isLoggedIn) {
+                navigate('/login');
+                return;
+              }
               toggleWishlist(product);
             }}
             className="absolute top-3 right-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-text-muted shadow-sm transition-all duration-200 hover:text-brand-accent hover:shadow-md"
@@ -137,7 +140,10 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (!isLoggedIn) { navigate('/login'); return; }
+                  if (!isLoggedIn) {
+                    navigate('/login');
+                    return;
+                  }
                   addToCart(product);
                 }}
                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-brand text-white transition-shadow hover:shadow-lg"
