@@ -28,6 +28,12 @@ export const ENDPOINTS = {
   MOMO: {
     CREATE: (orderId: string) => `/momo/create?orderId=${orderId}`,
   },
+  CART: {
+    BASE: '/cart',
+    ITEMS: '/cart/items',
+    ITEM: (productId: string) => `/cart/items/${productId}`,
+    SYNC: '/cart/sync',
+  },
   WISHLIST: {
     BASE: '/wishlist',
     TOGGLE: (productId: string) => `/wishlist/${productId}`,
