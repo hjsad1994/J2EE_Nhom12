@@ -25,6 +25,10 @@ export const useWishlistStore = create<WishlistState>()(
 
       toggle: async (product) => {
         const { isLoggedIn } = useAuthStore.getState();
+
+        // Không chạm local state khi chưa đăng nhập — component tự redirect
+        if (!isLoggedIn) return;
+
         const prevItems = get().items;
         const exists = prevItems.some((p) => p.id === product.id);
 
@@ -34,8 +38,6 @@ export const useWishlistStore = create<WishlistState>()(
             ? prevItems.filter((p) => p.id !== product.id)
             : [...prevItems, product],
         });
-
-        if (!isLoggedIn) return;
 
         try {
           const res = await apiClient.post<ApiResponse<Product[]>>(

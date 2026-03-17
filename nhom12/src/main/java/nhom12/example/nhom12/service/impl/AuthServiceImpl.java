@@ -63,6 +63,11 @@ public class AuthServiceImpl implements AuthService {
       throw new BadRequestException("Invalid username or password");
     }
 
+    if (user.isBanned()) {
+      throw new BadRequestException(
+          "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+    }
+
     UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
     String token = jwtUtil.generateToken(userDetails);
 

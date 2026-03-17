@@ -24,6 +24,7 @@ import {
   Trash2,
   X,
   Plus,
+  Check,
   TrendingUp,
   ShieldCheck,
   ChevronRight,
@@ -31,6 +32,8 @@ import {
   Menu,
   FileSpreadsheet,
   Upload,
+  Ban,
+  ShieldOff,
 } from 'lucide-react';
 import ExcelImportModal from '@/components/admin/ExcelImportModal';
 import { useNavigate } from 'react-router';
@@ -42,6 +45,7 @@ import type {
   CreateCategoryPayload,
   CreateProductPayload,
   Product,
+  ProductVariant,
 } from '@/types/product';
 import type { Order, OrderStatus } from '@/types/order';
 import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from '@/types/order';
@@ -53,6 +57,7 @@ interface UserItem {
   username: string;
   email: string;
   role: 'USER' | 'ADMIN';
+  banned: boolean;
   createdAt: string;
 }
 
@@ -75,6 +80,7 @@ const emptyProductForm: CreateProductPayload = {
   badge: '',
   specs: '',
   stock: 0,
+  variants: [],
 };
 
 /** Valid order status transitions (mirrors backend logic). */
@@ -121,6 +127,19 @@ export function Component() {
   const [savingProduct, setSavingProduct] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showExcelImport, setShowExcelImport] = useState(false);
+  const [newVariant, setNewVariant] = useState<ProductVariant>({
+    color: '',
+    storage: '',
+    price: 0,
+    stock: 0,
+  });
+  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null);
+  const [editingVariantData, setEditingVariantData] = useState<ProductVariant>({
+    color: '',
+    storage: '',
+    price: 0,
+    stock: 0,
+  });
 
   // Categories
   const [categories, setCategories] = useState<Category[]>([]);
@@ -141,7 +160,9 @@ export function Component() {
 
   useEffect(() => {
     apiClient
-      .get<ApiResponse<PaginatedResponse<UserItem>>>('/users')
+      .get<ApiResponse<PaginatedResponse<UserItem>>>('/users', {
+        params: { size: 100 },
+      })
       .then((res) => {
         setUsers(res.data.data.content);
         setTotalUsers(res.data.data.totalElements);
@@ -192,6 +213,8 @@ export function Component() {
   const openCreateProduct = () => {
     setEditingProduct(null);
     setProductForm(emptyProductForm);
+    setNewVariant({ color: '', storage: '', price: 0, stock: 0 });
+    setEditingVariantIndex(null);
     setShowProductForm(true);
   };
 
@@ -208,8 +231,66 @@ export function Component() {
       badge: p.badge ?? '',
       specs: p.specs ?? '',
       stock: p.stock ?? 0,
+      variants: p.variants ?? [],
     });
+    setNewVariant({ color: '', storage: '', price: 0, stock: 0 });
+    setEditingVariantIndex(null);
     setShowProductForm(true);
+  };
+
+  const startEditVariant = (index: number, v: ProductVariant) => {
+    setEditingVariantIndex(index);
+    setEditingVariantData({ ...v });
+  };
+
+  const saveEditVariant = () => {
+    if (editingVariantIndex === null) return;
+    setProductForm((prev) => ({
+      ...prev,
+      variants: (prev.variants ?? []).map((v, i) =>
+        i === editingVariantIndex ? { ...editingVariantData } : v,
+      ),
+    }));
+    setEditingVariantIndex(null);
+  };
+
+  const cancelEditVariant = () => setEditingVariantIndex(null);
+
+  const handleAddVariant = () => {
+    if (!newVariant.color.trim() || !newVariant.storage.trim()) return;
+    setProductForm((prev) => ({
+      ...prev,
+      variants: [...(prev.variants ?? []), { ...newVariant }],
+    }));
+    setNewVariant({ color: '', storage: '', price: 0, stock: 0 });
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    setProductForm((prev) => ({
+      ...prev,
+      variants: (prev.variants ?? []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleBanUser = async (userId: string, currentlyBanned: boolean) => {
+    const action = currentlyBanned ? 'mở khóa' : 'khóa';
+    if (!window.confirm(`Xác nhận ${action} tài khoản này?`)) return;
+    try {
+      const res = await apiClient.patch<ApiResponse<UserItem>>(
+        ENDPOINTS.USERS.BAN(userId),
+      );
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, banned: res.data.data.banned } : u,
+        ),
+      );
+      addToast('success', `Đã ${action} tài khoản thành công`);
+    } catch (err: unknown) {
+      const axiosErr = err as ApiError;
+      const msg =
+        axiosErr.response?.data?.message || `Không thể ${action} tài khoản.`;
+      addToast('error', msg);
+    }
   };
 
   const handleSaveProduct = async () => {
@@ -935,6 +1016,7 @@ export function Component() {
                         <th className="px-6 py-4">Người dùng</th>
                         <th className="px-6 py-4">Email</th>
                         <th className="px-6 py-4">Vai trò</th>
+                        <th className="px-6 py-4">Trạng thái</th>
                         <th className="px-6 py-4">Ngày tạo</th>
                         <th className="px-6 py-4">Thao tác</th>
                       </tr>
@@ -971,6 +1053,17 @@ export function Component() {
                               {u.role}
                             </span>
                           </td>
+                          <td className="px-6 py-4">
+                            {u.banned ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
+                                <Ban className="h-3 w-3" /> Đã khóa
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
+                                <Check className="h-3 w-3" /> Hoạt động
+                              </span>
+                            )}
+                          </td>
                           <td className="px-6 py-4 text-gray-400 text-xs">
                             {u.createdAt
                               ? new Date(u.createdAt).toLocaleDateString(
@@ -979,19 +1072,34 @@ export function Component() {
                               : '—'}
                           </td>
                           <td className="px-6 py-4">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateRole(u.id, u.role)}
-                              className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                                u.role === 'USER'
-                                  ? 'bg-purple-50 text-purple-600 hover:bg-purple-100'
-                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                              }`}
-                            >
-                              {u.role === 'USER'
-                                ? '↑ Nâng lên Admin'
-                                : '↓ Hạ xuống User'}
-                            </button>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateRole(u.id, u.role)}
+                                className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                  u.role === 'USER'
+                                    ? 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                }`}
+                              >
+                                {u.role === 'USER' ? '↑ Admin' : '↓ User'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleBanUser(u.id, u.banned)}
+                                className={`flex cursor-pointer items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                  u.banned
+                                    ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                                    : 'bg-red-50 text-red-500 hover:bg-red-100'
+                                }`}
+                              >
+                                {u.banned ? (
+                                  <><ShieldOff className="h-3 w-3" /> Mở khóa</>
+                                ) : (
+                                  <><Ban className="h-3 w-3" /> Khóa</>
+                                )}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1361,8 +1469,8 @@ export function Component() {
       {/* ── Product Modal ── */}
       {showProductForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <div className="flex w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl" style={{ maxHeight: '90vh' }}>
+            <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
               <div>
                 <h3 className="font-bold text-gray-800">
                   {editingProduct ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới'}
@@ -1377,7 +1485,7 @@ export function Component() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-3 px-6 py-5">
+            <div className="flex-1 space-y-3 overflow-y-auto px-6 py-5">
               {(
                 [
                   ['name', 'Tên sản phẩm *'],
@@ -1544,8 +1652,207 @@ export function Component() {
                   </div>
                 ))}
               </div>
+
+              {/* Variants section */}
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <p className="mb-3 text-sm font-semibold text-gray-700">
+                  Biến thể sản phẩm (Màu sắc / Dung lượng)
+                </p>
+
+                {/* Existing variants list */}
+                {(productForm.variants ?? []).length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    {(productForm.variants ?? []).map((v, i) =>
+                      editingVariantIndex === i ? (
+                        /* ── Inline edit row ── */
+                        <div
+                          key={i}
+                          className="rounded-lg border border-purple-200 bg-purple-50 p-2"
+                        >
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            {(
+                              [
+                                ['color', 'Màu', editingVariantData.color],
+                                ['storage', 'Dung lượng', editingVariantData.storage],
+                              ] as [keyof ProductVariant, string, string][]
+                            ).map(([field, label, val]) => (
+                              <div key={field}>
+                                <p className="mb-0.5 text-[10px] font-semibold text-gray-400">{label}</p>
+                                <input
+                                  type="text"
+                                  value={val}
+                                  onChange={(e) =>
+                                    setEditingVariantData((prev) => ({
+                                      ...prev,
+                                      [field]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
+                                />
+                              </div>
+                            ))}
+                            {(
+                              [
+                                ['price', 'Giá (₫)', editingVariantData.price],
+                                ['stock', 'Kho', editingVariantData.stock],
+                              ] as [keyof ProductVariant, string, number][]
+                            ).map(([field, label, val]) => (
+                              <div key={field}>
+                                <p className="mb-0.5 text-[10px] font-semibold text-gray-400">{label}</p>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={val || ''}
+                                  onChange={(e) =>
+                                    setEditingVariantData((prev) => ({
+                                      ...prev,
+                                      [field]: e.target.value ? Number(e.target.value) : 0,
+                                    }))
+                                  }
+                                  className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={saveEditVariant}
+                              className="flex cursor-pointer items-center gap-1 rounded-lg bg-purple-500 px-3 py-1 text-xs font-semibold text-white hover:bg-purple-600"
+                            >
+                              <Check className="h-3 w-3" /> Lưu
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelEditVariant}
+                              className="flex cursor-pointer items-center gap-1 rounded-lg border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-500 hover:bg-gray-100"
+                            >
+                              <X className="h-3 w-3" /> Hủy
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* ── Display row ── */
+                        <div
+                          key={i}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">
+                              {v.color}
+                            </span>
+                            <span className="rounded-md bg-purple-50 px-2 py-0.5 text-xs font-semibold text-purple-600">
+                              {v.storage}
+                            </span>
+                            <span className="text-xs text-gray-600">
+                              {v.price.toLocaleString('vi-VN')}₫
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              Kho: {v.stock}
+                            </span>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => startEditVariant(i, v)}
+                              className="cursor-pointer rounded-md p-1 text-indigo-400 hover:bg-indigo-50 hover:text-indigo-600"
+                              title="Sửa biến thể"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariant(i)}
+                              className="cursor-pointer rounded-md p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
+                              title="Xóa biến thể"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                )}
+
+                {/* Add new variant form */}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-gray-400">
+                      Màu sắc
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="VD: Đen"
+                      value={newVariant.color}
+                      onChange={(e) =>
+                        setNewVariant((prev) => ({ ...prev, color: e.target.value }))
+                      }
+                      className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-gray-400">
+                      Dung lượng
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="VD: 128GB"
+                      value={newVariant.storage}
+                      onChange={(e) =>
+                        setNewVariant((prev) => ({ ...prev, storage: e.target.value }))
+                      }
+                      className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-gray-400">
+                      Giá (₫)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={newVariant.price || ''}
+                      onChange={(e) =>
+                        setNewVariant((prev) => ({
+                          ...prev,
+                          price: e.target.value ? Number(e.target.value) : 0,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-gray-400">
+                      Tồn kho
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={newVariant.stock || ''}
+                      onChange={(e) =>
+                        setNewVariant((prev) => ({
+                          ...prev,
+                          stock: e.target.value ? Number(e.target.value) : 0,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddVariant}
+                  disabled={!newVariant.color.trim() || !newVariant.storage.trim()}
+                  className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-600 hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Thêm biến thể
+                </button>
+              </div>
             </div>
-            <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
+            <div className="flex shrink-0 gap-3 border-t border-gray-100 px-6 py-4">
               <button
                 type="button"
                 onClick={() => setShowProductForm(false)}

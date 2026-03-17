@@ -47,33 +47,38 @@ export const router = createBrowserRouter([
             path: 'products/:id',
             lazy: () => import('@/pages/ProductDetail'),
           },
+          // Trang yêu cầu đăng nhập
           {
-            path: 'wishlist',
-            lazy: () => import('@/pages/Wishlist'),
-          },
-          {
-            path: 'cart',
-            lazy: () => import('@/pages/Cart'),
-          },
-          {
-            path: 'checkout',
-            lazy: () => import('@/pages/Checkout'),
-          },
-          {
-            path: 'checkout/success',
-            lazy: () => import('@/pages/CheckoutSuccess'),
-          },
-          {
-            path: 'checkout/result',
-            lazy: () => import('@/pages/CheckoutResult'),
-          },
-          {
-            path: 'profile',
             Component: PrivateRoute,
             children: [
               {
-                index: true,
-                lazy: () => import('@/pages/Profile'),
+                path: 'wishlist',
+                lazy: () => import('@/pages/Wishlist'),
+              },
+              {
+                path: 'cart',
+                lazy: () => import('@/pages/Cart'),
+              },
+              {
+                path: 'checkout',
+                lazy: () => import('@/pages/Checkout'),
+              },
+              {
+                path: 'checkout/success',
+                lazy: () => import('@/pages/CheckoutSuccess'),
+              },
+              {
+                path: 'checkout/result',
+                lazy: () => import('@/pages/CheckoutResult'),
+              },
+              {
+                path: 'profile',
+                children: [
+                  {
+                    index: true,
+                    lazy: () => import('@/pages/Profile'),
+                  },
+                ],
               },
             ],
           },

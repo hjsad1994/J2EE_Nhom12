@@ -24,5 +24,7 @@ public interface UserService {
 
   UserResponse updateRole(String id, Role role);
 
+  UserResponse toggleBan(String id);
+
   void resetPassword(String userId, String newPassword);
 }

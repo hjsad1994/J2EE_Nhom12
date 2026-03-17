@@ -45,5 +45,6 @@ export const ENDPOINTS = {
     CHANGE_PASSWORD: '/users/me/password',
     SETUP_PASSWORD: '/users/me/setup-password',
     ROLE: (id: string) => `/users/${id}/role`,
+    BAN: (id: string) => `/users/${id}/ban`,
   },
 } as const;

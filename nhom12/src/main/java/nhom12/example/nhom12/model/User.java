@@ -33,4 +33,7 @@ public class User extends BaseDocument {
 
   /** true if user explicitly set their own password (not auto-generated for OAuth). */
   @Builder.Default private boolean hasPassword = false;
+
+  /** true if admin has banned this account. */
+  @Builder.Default private boolean banned = false;
 }

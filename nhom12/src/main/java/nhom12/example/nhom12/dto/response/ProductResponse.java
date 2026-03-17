@@ -1,11 +1,13 @@
 package nhom12.example.nhom12.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import nhom12.example.nhom12.model.ProductVariant;
 
 @Getter
 @Setter
@@ -26,6 +28,7 @@ public class ProductResponse {
   private String badge;
   private String specs;
   private int stock;
+  private List<ProductVariant> variants;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 }

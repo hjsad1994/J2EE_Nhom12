@@ -29,6 +29,7 @@ public class UserMapper {
         .email(user.getEmail())
         .role(user.getRole())
         .hasPassword(user.isHasPassword())
+        .banned(user.isBanned())
         .authProvider(authProvider)
         .createdAt(user.getCreatedAt())
         .updatedAt(user.getUpdatedAt())

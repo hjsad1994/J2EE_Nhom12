@@ -18,6 +18,7 @@ import nhom12.example.nhom12.model.enums.OrderStatus;
 public class OrderResponse {
 
   private String id;
+  private String orderCode;
   private String userId;
   private String email;
   private String customerName;
