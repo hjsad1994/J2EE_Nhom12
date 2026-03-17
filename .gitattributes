@@ -1,0 +1,17 @@
+frontend/.prettierrc text eol=lf
+frontend/.prettierignore text eol=lf
+frontend/*.js text eol=lf
+frontend/*.json text eol=lf
+frontend/*.html text eol=lf
+frontend/*.md text eol=lf
+frontend/**/*.ts text eol=lf
+frontend/**/*.tsx text eol=lf
+frontend/**/*.js text eol=lf
+frontend/**/*.jsx text eol=lf
+frontend/**/*.json text eol=lf
+frontend/**/*.css text eol=lf
+frontend/**/*.html text eol=lf
+frontend/**/*.md text eol=lf
+
+nhom12/mvnw text eol=lf
+nhom12/*.cmd text eol=crlf

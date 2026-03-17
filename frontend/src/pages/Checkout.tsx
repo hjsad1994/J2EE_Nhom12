@@ -109,7 +109,8 @@ function Checkout() {
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setError(
-        axiosErr.response?.data?.message ?? 'Đặt hàng thất bại. Vui lòng thử lại.',
+        axiosErr.response?.data?.message ??
+          'Đặt hàng thất bại. Vui lòng thử lại.',
       );
     } finally {
       setLoading(false);

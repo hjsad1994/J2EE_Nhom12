@@ -157,7 +157,8 @@ function Profile() {
   };
 
   const canCancel = (order: Order) => {
-    if (order.status !== 'PENDING' && order.status !== 'CONFIRMED') return false;
+    if (order.status !== 'PENDING' && order.status !== 'CONFIRMED')
+      return false;
     return order.paymentStatus !== 'PAID';
   };
 
