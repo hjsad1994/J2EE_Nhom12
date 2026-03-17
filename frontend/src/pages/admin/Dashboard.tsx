@@ -83,6 +83,15 @@ const emptyProductForm: CreateProductPayload = {
   variants: [],
 };
 
+const summarizeVariants = (variants: ProductVariant[] = []) => {
+  const primaryVariant = variants[0];
+
+  return {
+    displayPrice: primaryVariant?.price ?? 0,
+    totalStock: variants.reduce((total, variant) => total + variant.stock, 0),
+  };
+};
+
 /** Valid order status transitions (mirrors backend logic). */
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
@@ -339,10 +348,19 @@ export function Component() {
   };
 
   const handleSaveProduct = async () => {
+    const variants = productForm.variants ?? [];
+    if (variants.length === 0) {
+      addToast('error', 'Cần thêm ít nhất một biến thể cho sản phẩm');
+      return;
+    }
+
     setSavingProduct(true);
     try {
+      const { displayPrice, totalStock } = summarizeVariants(variants);
       const payload = {
         ...productForm,
+        price: displayPrice,
+        stock: totalStock,
         categoryId: productForm.categoryId || undefined,
       };
       if (editingProduct) {
@@ -1686,7 +1704,9 @@ export function Component() {
                     ['rating', 'Rating', 'number'],
                     ['stock', 'Tồn kho', 'number'],
                   ] as const
-                ).map(([field, label]) => (
+                )
+                  .filter(([field]) => field !== 'price' && field !== 'stock')
+                  .map(([field, label]) => (
                   <div key={field}>
                     <label className="mb-1 block text-xs font-semibold text-gray-500">
                       {label}
@@ -1721,6 +1741,36 @@ export function Component() {
                     />
                   </div>
                 ))}
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                  <p className="text-xs font-semibold text-emerald-700">
+                    Giá hiển thị cho khách
+                  </p>
+                  <p className="mt-1 text-sm text-emerald-900">
+                    {summarizeVariants(productForm.variants).displayPrice.toLocaleString(
+                      'vi-VN',
+                    )}
+                    ₫
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-700/80">
+                    Lấy theo biến thể đầu tiên trong danh sách.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3">
+                  <p className="text-xs font-semibold text-sky-700">
+                    Tổng tồn kho
+                  </p>
+                  <p className="mt-1 text-sm text-sky-900">
+                    {summarizeVariants(productForm.variants).totalStock.toLocaleString(
+                      'vi-VN',
+                    )}
+                  </p>
+                  <p className="mt-1 text-xs text-sky-700/80">
+                    Tự cộng từ tồn kho của tất cả biến thể.
+                  </p>
+                </div>
               </div>
 
               {/* Variants section */}

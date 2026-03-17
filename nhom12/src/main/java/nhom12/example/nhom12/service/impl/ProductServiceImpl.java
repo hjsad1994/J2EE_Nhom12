@@ -10,6 +10,7 @@ import nhom12.example.nhom12.mapper.ProductMapper;
 import nhom12.example.nhom12.model.Category;
 import nhom12.example.nhom12.model.Order;
 import nhom12.example.nhom12.model.Product;
+import nhom12.example.nhom12.model.ProductVariant;
 import nhom12.example.nhom12.model.enums.OrderStatus;
 import nhom12.example.nhom12.repository.CategoryRepository;
 import nhom12.example.nhom12.repository.OrderRepository;
@@ -41,6 +42,7 @@ public class ProductServiceImpl implements ProductService {
   @Transactional
   public ProductResponse createProduct(CreateProductRequest request) {
     Product product = productMapper.toEntity(request);
+    syncSummaryFieldsFromVariants(product);
     return toResponse(productRepository.save(product));
   }
 
@@ -80,6 +82,7 @@ public class ProductServiceImpl implements ProductService {
     product.setSpecs(request.getSpecs());
     product.setStock(request.getStock() != null ? request.getStock() : product.getStock());
     product.setVariants(request.getVariants());
+    syncSummaryFieldsFromVariants(product);
 
     return toResponse(productRepository.save(product));
   }
@@ -108,5 +111,16 @@ public class ProductServiceImpl implements ProductService {
             ? categoryRepository.findById(product.getCategoryId()).orElse(null)
             : null;
     return productMapper.toResponse(product, category);
+  }
+
+  private void syncSummaryFieldsFromVariants(Product product) {
+    List<ProductVariant> variants = product.getVariants();
+    if (variants == null || variants.isEmpty()) {
+      return;
+    }
+
+    ProductVariant primaryVariant = variants.get(0);
+    product.setPrice(primaryVariant.getPrice());
+    product.setStock(variants.stream().mapToInt(ProductVariant::getStock).sum());
   }
 }

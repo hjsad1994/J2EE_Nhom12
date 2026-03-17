@@ -62,11 +62,6 @@ export function Component() {
   }, [myReview, editingReviewId]);
 
   useEffect(() => {
-    setSelectedColor('');
-    setSelectedStorage('');
-  }, [id]);
-
-  useEffect(() => {
     if (!id) return;
     setLoading(true);
     apiClient
@@ -96,6 +91,19 @@ export function Component() {
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    const firstVariant = product?.variants?.[0];
+
+    if (!firstVariant) {
+      setSelectedColor('');
+      setSelectedStorage('');
+      return;
+    }
+
+    setSelectedColor(firstVariant.color);
+    setSelectedStorage(firstVariant.storage);
+  }, [product]);
 
   useEffect(() => {
     if (!id) return;
@@ -241,11 +249,10 @@ export function Component() {
   const effectivePrice = selectedVariant
     ? selectedVariant.price
     : product.price;
-  // -1 means variants exist but none selected yet
   const effectiveStock = hasVariants
     ? selectedVariant
       ? selectedVariant.stock
-      : -1
+      : 0
     : product.stock;
 
   const canAddToCart =
@@ -466,7 +473,7 @@ export function Component() {
             )}
 
             <div className="mt-6">
-              {effectiveStock === -1 ? null : effectiveStock > 0 ? (
+              {effectiveStock > 0 ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
                   <Check className="h-3.5 w-3.5" />
                   Còn hàng ({effectiveStock} sản phẩm)
@@ -478,9 +485,7 @@ export function Component() {
               )}
             </div>
 
-            {!isAdmin &&
-              (effectiveStock > 0 ||
-                (hasVariants && effectiveStock === -1)) && (
+            {!isAdmin && effectiveStock > 0 && (
                 <div className="mt-8 flex gap-3">
                   <motion.button
                     whileHover={{ scale: canAddToCart ? 1.02 : 1 }}
