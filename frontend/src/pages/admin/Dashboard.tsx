@@ -74,7 +74,6 @@ const emptyProductForm: CreateProductPayload = {
   brand: '',
   categoryId: '',
   price: 0,
-  originalPrice: undefined,
   image: '',
   rating: 0,
   badge: '',
@@ -246,7 +245,6 @@ export function Component() {
       brand: p.brand,
       categoryId: p.categoryId ?? '',
       price: p.price,
-      originalPrice: p.originalPrice,
       image: p.image,
       rating: p.rating,
       badge: p.badge ?? '',
@@ -360,6 +358,7 @@ export function Component() {
       const payload = {
         ...productForm,
         price: displayPrice,
+        originalPrice: undefined,
         stock: totalStock,
         categoryId: productForm.categoryId || undefined,
       };
@@ -1705,7 +1704,12 @@ export function Component() {
                     ['stock', 'Tồn kho', 'number'],
                   ] as const
                 )
-                  .filter(([field]) => field !== 'price' && field !== 'stock')
+                  .filter(
+                    ([field]) =>
+                      field !== 'price' &&
+                      field !== 'stock' &&
+                      field !== 'originalPrice',
+                  )
                   .map(([field, label]) => (
                   <div key={field}>
                     <label className="mb-1 block text-xs font-semibold text-gray-500">

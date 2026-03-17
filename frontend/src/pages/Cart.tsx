@@ -96,7 +96,7 @@ function Cart() {
             <AnimatePresence mode="popLayout">
               {items.map(({ product, quantity }) => (
                 <motion.div
-                  key={product.id}
+                  key={`${product.id}-${product.selectedColor ?? ''}-${product.selectedStorage ?? ''}`}
                   layout
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -133,10 +133,23 @@ function Cart() {
                         >
                           {product.name}
                         </Link>
+                        {(product.selectedColor || product.selectedStorage) && (
+                          <p className="mt-1 text-xs text-text-muted">
+                            {[product.selectedColor, product.selectedStorage]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        )}
                       </div>
                       <button
                         type="button"
-                        onClick={() => removeItem(product.id)}
+                        onClick={() =>
+                          removeItem(
+                            product.id,
+                            product.selectedColor,
+                            product.selectedStorage,
+                          )
+                        }
                         className="flex-shrink-0 cursor-pointer rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-alt hover:text-red-500"
                         aria-label={`Xóa ${product.name} khỏi giỏ hàng`}
                       >
@@ -154,7 +167,12 @@ function Cart() {
                         <button
                           type="button"
                           onClick={() =>
-                            updateQuantity(product.id, quantity - 1)
+                            updateQuantity(
+                              product.id,
+                              quantity - 1,
+                              product.selectedColor,
+                              product.selectedStorage,
+                            )
                           }
                           className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:border-brand hover:text-brand"
                           aria-label="Giảm số lượng"
@@ -171,7 +189,12 @@ function Cart() {
                         <button
                           type="button"
                           onClick={() =>
-                            updateQuantity(product.id, quantity + 1)
+                            updateQuantity(
+                              product.id,
+                              quantity + 1,
+                              product.selectedColor,
+                              product.selectedStorage,
+                            )
                           }
                           disabled={quantity >= MAX_QUANTITY}
                           className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"

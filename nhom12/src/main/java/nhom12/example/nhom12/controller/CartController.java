@@ -50,19 +50,26 @@ public class CartController {
   public ResponseEntity<ApiResponse<CartResponse>> updateQuantity(
       @AuthenticationPrincipal UserDetails principal,
       @PathVariable String productId,
+      @RequestParam(required = false) String color,
+      @RequestParam(required = false) String storage,
       @RequestParam int quantity) {
     return ResponseEntity.ok(
         ApiResponse.success(
-            cartService.updateItemQuantity(resolveUserId(principal), productId, quantity),
+            cartService.updateItemQuantity(
+                resolveUserId(principal), productId, color, storage, quantity),
             "Quantity updated"));
   }
 
   @DeleteMapping("/items/{productId}")
   public ResponseEntity<ApiResponse<CartResponse>> removeItem(
-      @AuthenticationPrincipal UserDetails principal, @PathVariable String productId) {
+      @AuthenticationPrincipal UserDetails principal,
+      @PathVariable String productId,
+      @RequestParam(required = false) String color,
+      @RequestParam(required = false) String storage) {
     return ResponseEntity.ok(
         ApiResponse.success(
-            cartService.removeItem(resolveUserId(principal), productId), "Item removed"));
+            cartService.removeItem(resolveUserId(principal), productId, color, storage),
+            "Item removed"));
   }
 
   /** Merge guest (localStorage) cart with server cart on login. */

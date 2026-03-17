@@ -15,6 +15,8 @@ import lombok.Setter;
 public class CartItemRequest {
 
   @NotBlank private String productId;
+  private String color;
+  private String storage;
 
   @Min(1)
   @Max(99)

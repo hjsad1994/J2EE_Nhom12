@@ -10,6 +10,8 @@ export interface OrderItem {
   productName: string;
   productImage: string;
   brand: string;
+  color?: string;
+  storage?: string;
   price: number;
   quantity: number;
 }

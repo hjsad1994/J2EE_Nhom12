@@ -17,6 +17,8 @@ public class OrderItem {
   private String productName;
   private String productImage;
   private String brand;
+  private String color;
+  private String storage;
   private double price;
   private int quantity;
 }

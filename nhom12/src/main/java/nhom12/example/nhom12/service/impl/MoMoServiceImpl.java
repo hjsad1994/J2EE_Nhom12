@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import nhom12.example.nhom12.config.MoMoConfig;
 import nhom12.example.nhom12.model.Order;
 import nhom12.example.nhom12.model.OrderItem;
+import nhom12.example.nhom12.model.Product;
+import nhom12.example.nhom12.model.ProductVariant;
 import nhom12.example.nhom12.model.enums.OrderStatus;
 import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.service.EmailService;
@@ -230,10 +232,51 @@ public class MoMoServiceImpl implements MoMoService {
           .findById(item.getProductId())
           .ifPresent(
               product -> {
-                product.setStock(product.getStock() + item.getQuantity());
+                ProductVariant variant = findVariant(product, item.getColor(), item.getStorage());
+                if (variant != null) {
+                  variant.setStock(variant.getStock() + item.getQuantity());
+                  syncSummaryFieldsFromVariants(product);
+                } else {
+                  product.setStock(product.getStock() + item.getQuantity());
+                }
                 productRepository.save(product);
               });
     }
+  }
+
+  private ProductVariant findVariant(Product product, String color, String storage) {
+    String normalizedColor = normalizeOption(color);
+    String normalizedStorage = normalizeOption(storage);
+
+    if (normalizedColor.isBlank() && normalizedStorage.isBlank()) {
+      return null;
+    }
+
+    if (product.getVariants() == null) {
+      return null;
+    }
+
+    return product.getVariants().stream()
+        .filter(
+            variant ->
+                normalizeOption(variant.getColor()).equals(normalizedColor)
+                    && normalizeOption(variant.getStorage()).equals(normalizedStorage))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private void syncSummaryFieldsFromVariants(Product product) {
+    if (product.getVariants() == null || product.getVariants().isEmpty()) {
+      return;
+    }
+
+    ProductVariant primaryVariant = product.getVariants().get(0);
+    product.setPrice(primaryVariant.getPrice());
+    product.setStock(product.getVariants().stream().mapToInt(ProductVariant::getStock).sum());
+  }
+
+  private String normalizeOption(String value) {
+    return value == null ? "" : value.trim();
   }
 
   private String hmacSHA256(String data, String key) {

@@ -82,6 +82,8 @@ function Checkout() {
         productName: product.name,
         productImage: product.image,
         brand: product.brand,
+        color: product.selectedColor,
+        storage: product.selectedStorage,
         price: product.price,
         quantity,
       })),
@@ -389,7 +391,10 @@ function Checkout() {
             {/* Product list */}
             <div className="max-h-72 space-y-4 overflow-y-auto pr-1">
               {items.map(({ product, quantity }) => (
-                <div key={product.id} className="flex gap-4">
+                <div
+                  key={`${product.id}-${product.selectedColor ?? ''}-${product.selectedStorage ?? ''}`}
+                  className="flex gap-4"
+                >
                   <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg border border-border bg-surface-alt p-1">
                     <img
                       src={product.image}
@@ -401,6 +406,13 @@ function Checkout() {
                     <h4 className="line-clamp-1 text-sm font-medium text-text-primary">
                       {product.name}
                     </h4>
+                    {(product.selectedColor || product.selectedStorage) && (
+                      <p className="text-xs text-text-muted">
+                        {[product.selectedColor, product.selectedStorage]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    )}
                     <p className="text-xs text-text-muted">
                       Số lượng: {quantity}
                     </p>

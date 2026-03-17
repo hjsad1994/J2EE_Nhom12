@@ -20,6 +20,8 @@ interface ServerCartItem {
   productName: string;
   productImage: string;
   brand: string;
+  color?: string;
+  storage?: string;
   price: number;
   quantity: number;
 }
@@ -36,8 +38,13 @@ interface CartState {
   isLoading: boolean;
 
   addItem: (product: Product) => Promise<void>;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (productId: string, color?: string, storage?: string) => void;
+  updateQuantity: (
+    productId: string,
+    quantity: number,
+    color?: string,
+    storage?: string,
+  ) => void;
   clear: () => void;
 
   /** Fetch cart from server (called on login). */
@@ -53,6 +60,25 @@ interface CartState {
 }
 
 /** Convert a server cart item to the frontend CartItem format. */
+const toCartItemKey = (product: Product) =>
+  [product.id, product.selectedColor ?? '', product.selectedStorage ?? ''].join(
+    '::',
+  );
+
+const buildCartItemUrl = (product: Product) => {
+  const params = new URLSearchParams();
+  if (product.selectedColor) {
+    params.set('color', product.selectedColor);
+  }
+  if (product.selectedStorage) {
+    params.set('storage', product.selectedStorage);
+  }
+
+  const query = params.toString();
+  const base = ENDPOINTS.CART.ITEM(product.id);
+  return query ? `${base}?${query}` : base;
+};
+
 const fromServer = (item: ServerCartItem): CartItem => ({
   product: {
     id: item.productId,
@@ -60,6 +86,8 @@ const fromServer = (item: ServerCartItem): CartItem => ({
     image: item.productImage,
     brand: item.brand,
     price: item.price,
+    selectedColor: item.color,
+    selectedStorage: item.storage,
     // Fields not stored in cart snapshot — use safe defaults
     rating: 0,
     stock: 99,
@@ -78,12 +106,13 @@ export const useCartStore = create<CartState>()(
       addItem: async (product) => {
         // 1. Optimistic local update
         const prev = get().items;
-        const existing = prev.find((i) => i.product.id === product.id);
+        const key = toCartItemKey(product);
+        const existing = prev.find((i) => toCartItemKey(i.product) === key);
         if (existing) {
           if (existing.quantity >= MAX_QUANTITY) return;
           set({
             items: prev.map((i) =>
-              i.product.id === product.id
+              toCartItemKey(i.product) === key
                 ? { ...i, quantity: Math.min(i.quantity + 1, MAX_QUANTITY) }
                 : i,
             ),
@@ -99,6 +128,8 @@ export const useCartStore = create<CartState>()(
             ENDPOINTS.CART.ITEMS,
             {
               productId: product.id,
+              color: product.selectedColor,
+              storage: product.selectedStorage,
               quantity: 1,
             },
           );
@@ -109,45 +140,85 @@ export const useCartStore = create<CartState>()(
         }
       },
 
-      removeItem: (productId) => {
+      removeItem: (productId, color, storage) => {
         const prev = get().items;
-        set({ items: prev.filter((i) => i.product.id !== productId) });
+        set({
+          items: prev.filter(
+            (i) =>
+              !(
+                i.product.id === productId &&
+                (i.product.selectedColor ?? '') === (color ?? '') &&
+                (i.product.selectedStorage ?? '') === (storage ?? '')
+              ),
+          ),
+        });
 
         if (!isLoggedIn()) return;
+        const url = buildCartItemUrl({
+          id: productId,
+          name: '',
+          brand: '',
+          price: 0,
+          image: '',
+          rating: 0,
+          stock: 0,
+          selectedColor: color,
+          selectedStorage: storage,
+        });
         apiClient
-          .delete<ApiResponse<ServerCartResponse>>(
-            ENDPOINTS.CART.ITEM(productId),
-          )
+          .delete<ApiResponse<ServerCartResponse>>(url)
           .then((res) => set({ items: res.data.data.items.map(fromServer) }))
           .catch(() => set({ items: prev }));
       },
 
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (productId, quantity, color, storage) => {
         const prev = get().items;
 
         if (quantity <= 0) {
-          set({ items: prev.filter((i) => i.product.id !== productId) });
+          set({
+            items: prev.filter(
+              (i) =>
+                !(
+                  i.product.id === productId &&
+                  (i.product.selectedColor ?? '') === (color ?? '') &&
+                  (i.product.selectedStorage ?? '') === (storage ?? '')
+                ),
+            ),
+          });
         } else {
           const clamped = Math.min(quantity, MAX_QUANTITY);
           set({
             items: prev.map((i) =>
-              i.product.id === productId ? { ...i, quantity: clamped } : i,
+              i.product.id === productId &&
+                (i.product.selectedColor ?? '') === (color ?? '') &&
+                (i.product.selectedStorage ?? '') === (storage ?? '')
+                ? { ...i, quantity: clamped }
+                : i,
             ),
           });
         }
 
         if (!isLoggedIn()) return;
+        const url = buildCartItemUrl({
+          id: productId,
+          name: '',
+          brand: '',
+          price: 0,
+          image: '',
+          rating: 0,
+          stock: 0,
+          selectedColor: color,
+          selectedStorage: storage,
+        });
         if (quantity <= 0) {
           apiClient
-            .delete<ApiResponse<ServerCartResponse>>(
-              ENDPOINTS.CART.ITEM(productId),
-            )
+            .delete<ApiResponse<ServerCartResponse>>(url)
             .then((res) => set({ items: res.data.data.items.map(fromServer) }))
             .catch(() => set({ items: prev }));
         } else {
           apiClient
             .put<ApiResponse<ServerCartResponse>>(
-              `${ENDPOINTS.CART.ITEM(productId)}?quantity=${Math.min(quantity, MAX_QUANTITY)}`,
+              `${url}${url.includes('?') ? '&' : '?'}quantity=${Math.min(quantity, MAX_QUANTITY)}`,
             )
             .then((res) => set({ items: res.data.data.items.map(fromServer) }))
             .catch(() => set({ items: prev }));
@@ -189,6 +260,8 @@ export const useCartStore = create<CartState>()(
           const payload = {
             items: localItems.map((i) => ({
               productId: i.product.id,
+              color: i.product.selectedColor,
+              storage: i.product.selectedStorage,
               quantity: i.quantity,
             })),
           };

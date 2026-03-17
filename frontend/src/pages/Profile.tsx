@@ -550,7 +550,7 @@ function Profile() {
                             <div className="space-y-3">
                               {order.items.map((item) => (
                                 <div
-                                  key={item.productId}
+                                  key={`${item.productId}-${item.color ?? ''}-${item.storage ?? ''}`}
                                   className="flex items-center gap-3"
                                 >
                                   <img

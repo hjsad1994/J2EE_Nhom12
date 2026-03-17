@@ -10,6 +10,7 @@ import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Cart;
 import nhom12.example.nhom12.model.CartItem;
 import nhom12.example.nhom12.model.Product;
+import nhom12.example.nhom12.model.ProductVariant;
 import nhom12.example.nhom12.repository.CartRepository;
 import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.service.CartService;
@@ -38,6 +39,7 @@ public class CartServiceImpl implements CartService {
             .findById(request.getProductId())
             .orElseThrow(
                 () -> new ResourceNotFoundException("Product", "id", request.getProductId()));
+    ProductVariant selectedVariant = findVariant(product, request.getColor(), request.getStorage());
 
     Cart cart =
         cartRepository
@@ -46,7 +48,13 @@ public class CartServiceImpl implements CartService {
 
     Optional<CartItem> existing =
         cart.getItems().stream()
-            .filter(i -> i.getProductId().equals(request.getProductId()))
+            .filter(
+                i ->
+                    matchesItem(
+                        i,
+                        request.getProductId(),
+                        normalizeOption(request.getColor()),
+                        normalizeOption(request.getStorage())))
             .findFirst();
 
     if (existing.isPresent()) {
@@ -58,9 +66,11 @@ public class CartServiceImpl implements CartService {
               CartItem.builder()
                   .productId(product.getId())
                   .productName(product.getName())
-                  .productImage(product.getImage())
+                  .productImage(resolveCartImage(product, selectedVariant))
                   .brand(product.getBrand())
-                  .price(product.getPrice())
+                  .color(normalizeOption(request.getColor()))
+                  .storage(normalizeOption(request.getStorage()))
+                  .price(selectedVariant != null ? selectedVariant.getPrice() : product.getPrice())
                   .quantity(request.getQuantity())
                   .build());
     }
@@ -70,17 +80,18 @@ public class CartServiceImpl implements CartService {
 
   @Override
   @Transactional
-  public CartResponse updateItemQuantity(String userId, String productId, int quantity) {
+  public CartResponse updateItemQuantity(
+      String userId, String productId, String color, String storage, int quantity) {
     Cart cart =
         cartRepository
             .findByUserId(userId)
             .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
 
     if (quantity <= 0) {
-      cart.getItems().removeIf(i -> i.getProductId().equals(productId));
+      cart.getItems().removeIf(i -> matchesItem(i, productId, color, storage));
     } else {
       cart.getItems().stream()
-          .filter(i -> i.getProductId().equals(productId))
+          .filter(i -> matchesItem(i, productId, color, storage))
           .findFirst()
           .ifPresent(i -> i.setQuantity(Math.min(quantity, MAX_QUANTITY)));
     }
@@ -90,13 +101,13 @@ public class CartServiceImpl implements CartService {
 
   @Override
   @Transactional
-  public CartResponse removeItem(String userId, String productId) {
+  public CartResponse removeItem(String userId, String productId, String color, String storage) {
     Cart cart =
         cartRepository
             .findByUserId(userId)
             .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
 
-    cart.getItems().removeIf(i -> i.getProductId().equals(productId));
+    cart.getItems().removeIf(i -> matchesItem(i, productId, color, storage));
     return toResponse(cartRepository.save(cart));
   }
 
@@ -123,7 +134,13 @@ public class CartServiceImpl implements CartService {
 
       Optional<CartItem> serverItem =
           cart.getItems().stream()
-              .filter(i -> i.getProductId().equals(localItem.getProductId()))
+              .filter(
+                  i ->
+                      matchesItem(
+                          i,
+                          localItem.getProductId(),
+                          normalizeOption(localItem.getColor()),
+                          normalizeOption(localItem.getStorage())))
               .findFirst();
 
       if (serverItem.isPresent()) {
@@ -133,15 +150,20 @@ public class CartServiceImpl implements CartService {
                 Math.max(serverItem.get().getQuantity(), localItem.getQuantity()), MAX_QUANTITY);
         serverItem.get().setQuantity(merged);
       } else {
+        ProductVariant selectedVariant =
+            findVariant(product, localItem.getColor(), localItem.getStorage());
         // Add new item from local cart with fresh product data
         cart.getItems()
             .add(
                 CartItem.builder()
                     .productId(product.getId())
                     .productName(product.getName())
-                    .productImage(product.getImage())
+                    .productImage(resolveCartImage(product, selectedVariant))
                     .brand(product.getBrand())
-                    .price(product.getPrice())
+                    .color(normalizeOption(localItem.getColor()))
+                    .storage(normalizeOption(localItem.getStorage()))
+                    .price(
+                        selectedVariant != null ? selectedVariant.getPrice() : product.getPrice())
                     .quantity(Math.min(localItem.getQuantity(), MAX_QUANTITY))
                     .build());
       }
@@ -173,5 +195,46 @@ public class CartServiceImpl implements CartService {
 
   private CartResponse emptyCart() {
     return CartResponse.builder().items(new ArrayList<>()).build();
+  }
+
+  private boolean matchesItem(CartItem item, String productId, String color, String storage) {
+    return item.getProductId().equals(productId)
+        && normalizeOption(item.getColor()).equals(normalizeOption(color))
+        && normalizeOption(item.getStorage()).equals(normalizeOption(storage));
+  }
+
+  private String normalizeOption(String value) {
+    return value == null ? "" : value.trim();
+  }
+
+  private ProductVariant findVariant(Product product, String color, String storage) {
+    String normalizedColor = normalizeOption(color);
+    String normalizedStorage = normalizeOption(storage);
+
+    if (normalizedColor.isBlank() && normalizedStorage.isBlank()) {
+      return null;
+    }
+
+    return product.getVariants() == null
+        ? null
+        : product.getVariants().stream()
+            .filter(
+                variant ->
+                    normalizeOption(variant.getColor()).equals(normalizedColor)
+                        && normalizeOption(variant.getStorage()).equals(normalizedStorage))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Product variant",
+                        "productId",
+                        product.getId() + ":" + normalizedColor + ":" + normalizedStorage));
+  }
+
+  private String resolveCartImage(Product product, ProductVariant variant) {
+    if (variant != null && variant.getImage() != null && !variant.getImage().isBlank()) {
+      return variant.getImage();
+    }
+    return product.getImage();
   }
 }

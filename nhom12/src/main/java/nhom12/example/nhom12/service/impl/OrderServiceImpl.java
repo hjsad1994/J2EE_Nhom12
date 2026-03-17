@@ -14,6 +14,7 @@ import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Order;
 import nhom12.example.nhom12.model.OrderItem;
 import nhom12.example.nhom12.model.Product;
+import nhom12.example.nhom12.model.ProductVariant;
 import nhom12.example.nhom12.model.enums.OrderStatus;
 import nhom12.example.nhom12.repository.OrderRepository;
 import nhom12.example.nhom12.repository.ProductRepository;
@@ -44,8 +45,8 @@ public class OrderServiceImpl implements OrderService {
     VALID_TRANSITIONS.put(
         OrderStatus.CONFIRMED, Set.of(OrderStatus.SHIPPING, OrderStatus.CANCELLED));
     VALID_TRANSITIONS.put(OrderStatus.SHIPPING, Set.of(OrderStatus.DELIVERED));
-    VALID_TRANSITIONS.put(OrderStatus.DELIVERED, Set.of()); // terminal
-    VALID_TRANSITIONS.put(OrderStatus.CANCELLED, Set.of()); // terminal
+    VALID_TRANSITIONS.put(OrderStatus.DELIVERED, Set.of());
+    VALID_TRANSITIONS.put(OrderStatus.CANCELLED, Set.of());
   }
 
   private final OrderRepository orderRepository;
@@ -53,20 +54,9 @@ public class OrderServiceImpl implements OrderService {
   private final SimpMessagingTemplate messagingTemplate;
   private final EmailService emailService;
 
-  /**
-   * Creates an order atomically:
-   *
-   * <ol>
-   *   <li>Validate and deduct stock using Optimistic Locking (@Version on Product).
-   *   <li>Persist order in the same MongoDB transaction.
-   *   <li>If any step fails, the entire transaction rolls back (stock is restored automatically).
-   *   <li>Duplicate orderCode (idempotency key) is rejected with a user-friendly error.
-   * </ol>
-   */
   @Override
   @Transactional
   public OrderResponse createOrder(String userId, CreateOrderRequest request) {
-    // Use client-supplied idempotency key or generate a server-side UUID
     String orderCode =
         (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank())
             ? request.getIdempotencyKey()
@@ -74,9 +64,6 @@ public class OrderServiceImpl implements OrderService {
 
     List<OrderItem> items = new ArrayList<>();
 
-    // Single-pass: validate stock, deduct, and build order items
-    // Optimistic Locking: productRepository.save() throws OptimisticLockingFailureException
-    // if the product's @Version field was modified by a concurrent request since we loaded it.
     try {
       for (var itemReq : request.getItems()) {
         Product product =
@@ -84,27 +71,31 @@ public class OrderServiceImpl implements OrderService {
                 .findById(itemReq.getProductId())
                 .orElseThrow(
                     () -> new ResourceNotFoundException("Product", "id", itemReq.getProductId()));
+        ProductVariant variant = findVariant(product, itemReq.getColor(), itemReq.getStorage());
+        int availableStock = variant != null ? variant.getStock() : product.getStock();
 
-        if (product.getStock() < itemReq.getQuantity()) {
+        if (availableStock < itemReq.getQuantity()) {
           throw new BadRequestException(
               "Sản phẩm '"
                   + product.getName()
                   + "' chỉ còn "
-                  + product.getStock()
+                  + availableStock
                   + " sản phẩm trong kho");
         }
 
-        // Deduct stock — if a concurrent order modified this product between our read and this
-        // save, MongoDB will detect the @Version mismatch and throw
-        // OptimisticLockingFailureException
-        product.setStock(product.getStock() - itemReq.getQuantity());
-        productRepository.save(product);
+        if (variant != null) {
+          variant.setStock(variant.getStock() - itemReq.getQuantity());
+          syncSummaryFieldsFromVariants(product);
+        } else {
+          product.setStock(product.getStock() - itemReq.getQuantity());
+        }
 
-        items.add(buildOrderItem(product, itemReq.getQuantity()));
+        productRepository.save(product);
+        items.add(buildOrderItem(product, itemReq, variant));
       }
     } catch (OptimisticLockingFailureException e) {
-      // Another request updated the product's stock concurrently (e.g., Flash Sale)
-      throw new BadRequestException("Sản phẩm vừa được cập nhật bởi người khác. Vui lòng thử lại.");
+      throw new BadRequestException(
+          "Sản phẩm vừa được cập nhật bởi người khác. Vui lòng thử lại.");
     }
 
     double subtotal = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
@@ -132,12 +123,8 @@ public class OrderServiceImpl implements OrderService {
             .total(total)
             .build();
 
-    // DuplicateKeyException: orderCode unique index blocks duplicate submissions.
-    // This catches cases where the same idempotency key is reused (client retry on network error).
     try {
       Order saved = orderRepository.save(order);
-      // COD orders are confirmed immediately by store workflow; MoMo orders will only send
-      // confirmation after the gateway reports a successful payment.
       if (!"MOMO".equalsIgnoreCase(saved.getPaymentMethod())) {
         emailService.sendOrderConfirmationEmail(
             saved.getEmail(), saved.getCustomerName(), saved.getOrderCode(), saved.getTotal());
@@ -156,7 +143,9 @@ public class OrderServiceImpl implements OrderService {
     }
   }
 
-  private OrderItem buildOrderItem(Product product, int quantity) {
+  private OrderItem buildOrderItem(
+      Product product, CreateOrderRequest.OrderItemRequest itemRequest, ProductVariant variant) {
+    int quantity = itemRequest.getQuantity();
     if (quantity < MIN_ORDER_ITEM_QUANTITY || quantity > MAX_ORDER_ITEM_QUANTITY) {
       throw new BadRequestException(
           "Order item quantity must be between "
@@ -168,9 +157,11 @@ public class OrderServiceImpl implements OrderService {
     return OrderItem.builder()
         .productId(product.getId())
         .productName(product.getName())
-        .productImage(product.getImage())
+        .productImage(resolveOrderImage(product, variant))
         .brand(product.getBrand())
-        .price(product.getPrice())
+        .color(normalizeOption(itemRequest.getColor()))
+        .storage(normalizeOption(itemRequest.getStorage()))
+        .price(variant != null ? variant.getPrice() : product.getPrice())
         .quantity(quantity)
         .build();
   }
@@ -196,8 +187,6 @@ public class OrderServiceImpl implements OrderService {
             .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
 
     OrderStatus currentStatus = order.getStatus();
-
-    // Validate status transition
     Set<OrderStatus> allowed = VALID_TRANSITIONS.getOrDefault(currentStatus, Set.of());
     if (!allowed.contains(newStatus)) {
       throw new BadRequestException(
@@ -209,7 +198,6 @@ public class OrderServiceImpl implements OrderService {
               + allowed);
     }
 
-    // Restore stock when order is cancelled (atomic within this transaction)
     if (newStatus == OrderStatus.CANCELLED) {
       if ("PAID".equals(order.getPaymentStatus())) {
         throw new BadRequestException("Đơn hàng đã thanh toán. Hãy hoàn tiền trước khi hủy.");
@@ -220,7 +208,6 @@ public class OrderServiceImpl implements OrderService {
       order.setCancelReason("Hủy bởi quản trị viên");
     }
 
-    // Auto-mark COD as PAID when delivered
     if (newStatus == OrderStatus.DELIVERED && "COD".equals(order.getPaymentMethod())) {
       order.setPaymentStatus("PAID");
     }
@@ -228,7 +215,6 @@ public class OrderServiceImpl implements OrderService {
     order.setStatus(newStatus);
     OrderResponse response = toResponse(orderRepository.save(order));
 
-    // Send WebSocket notification for order status change
     messagingTemplate.convertAndSendToUser(
         order.getUserId(),
         "/queue/order-status",
@@ -253,16 +239,13 @@ public class OrderServiceImpl implements OrderService {
             .findById(orderId)
             .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
-    // Verify ownership
     if (!order.getUserId().equals(userId)) {
       throw new BadRequestException("Bạn không có quyền hủy đơn hàng này");
     }
 
-    // Allow cancellation of PENDING and CONFIRMED orders (not yet shipped)
     if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.CONFIRMED) {
       throw new BadRequestException(
-          "Chỉ có thể hủy đơn hàng chưa được giao cho đơn vị vận chuyển. "
-              + "Trạng thái hiện tại: "
+          "Chỉ có thể hủy đơn hàng chưa được giao cho đơn vị vận chuyển. Trạng thái hiện tại: "
               + order.getStatus());
     }
 
@@ -270,7 +253,6 @@ public class OrderServiceImpl implements OrderService {
       throw new BadRequestException("Đơn hàng đã thanh toán và cần hoàn tiền trước khi hủy.");
     }
 
-    // Restore stock (atomic within this transaction)
     restoreStock(order);
 
     order.setStatus(OrderStatus.CANCELLED);
@@ -280,43 +262,98 @@ public class OrderServiceImpl implements OrderService {
     return toResponse(orderRepository.save(order));
   }
 
-  /** Restore product stock when an order is cancelled. Must be called within a transaction. */
   private void restoreStock(Order order) {
     for (OrderItem item : order.getItems()) {
       productRepository
           .findById(item.getProductId())
           .ifPresent(
               product -> {
-                product.setStock(product.getStock() + item.getQuantity());
+                ProductVariant variant = findVariant(product, item.getColor(), item.getStorage());
+                if (variant != null) {
+                  variant.setStock(variant.getStock() + item.getQuantity());
+                  syncSummaryFieldsFromVariants(product);
+                } else {
+                  product.setStock(product.getStock() + item.getQuantity());
+                }
                 productRepository.save(product);
               });
     }
   }
 
-  private OrderResponse toResponse(Order o) {
+  private ProductVariant findVariant(Product product, String color, String storage) {
+    String normalizedColor = normalizeOption(color);
+    String normalizedStorage = normalizeOption(storage);
+
+    if (normalizedColor.isBlank() && normalizedStorage.isBlank()) {
+      return null;
+    }
+
+    if (product.getVariants() == null) {
+      throw new ResourceNotFoundException(
+          "Product variant",
+          "productId",
+          product.getId() + ":" + normalizedColor + ":" + normalizedStorage);
+    }
+
+    return product.getVariants().stream()
+        .filter(
+            variant ->
+                normalizeOption(variant.getColor()).equals(normalizedColor)
+                    && normalizeOption(variant.getStorage()).equals(normalizedStorage))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new ResourceNotFoundException(
+                    "Product variant",
+                    "productId",
+                    product.getId() + ":" + normalizedColor + ":" + normalizedStorage));
+  }
+
+  private void syncSummaryFieldsFromVariants(Product product) {
+    if (product.getVariants() == null || product.getVariants().isEmpty()) {
+      return;
+    }
+
+    ProductVariant primaryVariant = product.getVariants().get(0);
+    product.setPrice(primaryVariant.getPrice());
+    product.setStock(product.getVariants().stream().mapToInt(ProductVariant::getStock).sum());
+  }
+
+  private String resolveOrderImage(Product product, ProductVariant variant) {
+    if (variant != null && variant.getImage() != null && !variant.getImage().isBlank()) {
+      return variant.getImage();
+    }
+    return product.getImage();
+  }
+
+  private String normalizeOption(String value) {
+    return value == null ? "" : value.trim();
+  }
+
+  private OrderResponse toResponse(Order order) {
     return OrderResponse.builder()
-        .id(o.getId())
-        .orderCode(o.getOrderCode())
-        .userId(o.getUserId())
-        .email(o.getEmail())
-        .customerName(o.getCustomerName())
-        .phone(o.getPhone())
-        .address(o.getAddress())
-        .city(o.getCity())
-        .district(o.getDistrict())
-        .ward(o.getWard())
-        .note(o.getNote())
-        .paymentMethod(o.getPaymentMethod())
-        .status(o.getStatus())
-        .items(o.getItems())
-        .subtotal(o.getSubtotal())
-        .shippingFee(o.getShippingFee())
-        .total(o.getTotal())
-        .createdAt(o.getCreatedAt())
-        .paymentStatus(o.getPaymentStatus())
-        .momoTransId(o.getMomoTransId())
-        .cancelReason(o.getCancelReason())
-        .cancelledBy(o.getCancelledBy())
+        .id(order.getId())
+        .orderCode(order.getOrderCode())
+        .userId(order.getUserId())
+        .email(order.getEmail())
+        .customerName(order.getCustomerName())
+        .phone(order.getPhone())
+        .address(order.getAddress())
+        .city(order.getCity())
+        .district(order.getDistrict())
+        .ward(order.getWard())
+        .note(order.getNote())
+        .paymentMethod(order.getPaymentMethod())
+        .status(order.getStatus())
+        .items(order.getItems())
+        .subtotal(order.getSubtotal())
+        .shippingFee(order.getShippingFee())
+        .total(order.getTotal())
+        .createdAt(order.getCreatedAt())
+        .paymentStatus(order.getPaymentStatus())
+        .momoTransId(order.getMomoTransId())
+        .cancelReason(order.getCancelReason())
+        .cancelledBy(order.getCancelledBy())
         .build();
   }
 }

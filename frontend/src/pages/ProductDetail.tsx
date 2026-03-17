@@ -273,10 +273,6 @@ export function Component() {
     }
   };
 
-  const discount = product.originalPrice
-    ? Math.round((1 - effectivePrice / product.originalPrice) * 100)
-    : null;
-
   const sentimentStyles: Record<AbsaResult['sentiment'], string> = {
     positive: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     negative: 'border-amber-200 bg-amber-50 text-amber-700',
@@ -391,16 +387,6 @@ export function Component() {
               <span className="font-display text-4xl font-bold text-brand">
                 {effectivePrice.toLocaleString('vi-VN')}đ
               </span>
-              {product.originalPrice && (
-                <>
-                  <span className="text-lg text-text-muted line-through">
-                    {product.originalPrice.toLocaleString('vi-VN')}đ
-                  </span>
-                  <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-bold text-white">
-                    -{discount}%
-                  </span>
-                </>
-              )}
             </div>
 
             {hasVariants && (
@@ -502,6 +488,8 @@ export function Component() {
                           image: displayImage,
                           price: effectivePrice,
                           stock: effectiveStock,
+                          selectedColor,
+                          selectedStorage,
                         });
                     }}
                     className="btn-primary flex flex-1 items-center justify-center gap-2 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -524,6 +512,8 @@ export function Component() {
                         image: displayImage,
                         price: effectivePrice,
                         stock: effectiveStock,
+                        selectedColor,
+                        selectedStorage,
                       });
                       navigate('/checkout');
                     }}

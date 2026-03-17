@@ -20,6 +20,8 @@ export interface Product {
   specs?: string;
   stock: number;
   variants?: ProductVariant[];
+  selectedColor?: string;
+  selectedStorage?: string;
   createdAt?: string;
   updatedAt?: string;
 }

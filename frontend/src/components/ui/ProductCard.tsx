@@ -2,9 +2,9 @@ import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router';
 
+import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
-import { useAuthStore } from '@/store/useAuthStore';
 import type { Product } from '@/types/product';
 
 interface ProductCardProps {
@@ -19,9 +19,22 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const addToCart = useCartStore((s) => s.addItem);
   const { isAdmin, isLoggedIn } = useAuthStore();
 
-  const discount = product.originalPrice
-    ? Math.round((1 - product.price / product.originalPrice) * 100)
-    : null;
+  const primaryVariant = product.variants?.[0];
+  const displayImage = primaryVariant?.image || product.image;
+  const displayPrice = primaryVariant?.price ?? product.price;
+  const displayStock =
+    product.variants?.reduce((total, variant) => total + variant.stock, 0) ??
+    product.stock;
+  const defaultCartProduct = primaryVariant
+    ? {
+        ...product,
+        image: displayImage,
+        price: primaryVariant.price,
+        stock: primaryVariant.stock,
+        selectedColor: primaryVariant.color,
+        selectedStorage: primaryVariant.storage,
+      }
+    : product;
 
   return (
     <motion.div
@@ -34,26 +47,19 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
         to={`/products/${product.id}`}
         className="group relative block overflow-hidden rounded-2xl card card-hover no-underline"
       >
-        {/* Badges — top-left, stacked */}
         <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
-          {product.stock <= 0 && (
+          {displayStock <= 0 && (
             <span className="rounded-full bg-gray-800 px-3 py-1 text-xs font-semibold text-white shadow-sm">
               Hết hàng
             </span>
           )}
-          {product.badge && product.stock > 0 && (
+          {product.badge && displayStock > 0 && (
             <span className="rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white shadow-sm">
               {product.badge}
             </span>
           )}
-          {discount && product.stock > 0 && (
-            <span className="rounded-full bg-red-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
-              -{discount}%
-            </span>
-          )}
         </div>
 
-        {/* Wishlist toggle — top-right (ẩn với admin) */}
         {!isAdmin && (
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -80,31 +86,28 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           </motion.button>
         )}
 
-        {/* Image */}
         <div className="relative flex items-center justify-center overflow-hidden bg-surface-alt p-6 pt-8">
           <motion.img
-            src={product.image}
+            src={displayImage}
             alt={product.name}
             className="h-48 w-auto object-contain transition-transform duration-500 group-hover:scale-110"
             whileHover={{ rotateY: 8 }}
           />
         </div>
 
-        {/* Info */}
         <div className="p-5">
           <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
             {product.brand}
           </p>
-          <h3 className="mt-1 font-display text-base font-semibold text-text-primary line-clamp-1">
+          <h3 className="mt-1 line-clamp-1 font-display text-base font-semibold text-text-primary">
             {product.name}
           </h3>
           {product.specs && (
-            <p className="mt-1 text-xs text-text-secondary line-clamp-1">
+            <p className="mt-1 line-clamp-1 text-xs text-text-secondary">
               {product.specs}
             </p>
           )}
 
-          {/* Rating */}
           <div className="mt-2 flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
@@ -121,19 +124,13 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             </span>
           </div>
 
-          {/* Price + CTA */}
           <div className="mt-3 flex items-end justify-between">
             <div>
               <span className="font-display text-lg font-bold text-brand">
-                {product.price.toLocaleString('vi-VN')}₫
+                {displayPrice.toLocaleString('vi-VN')}₫
               </span>
-              {product.originalPrice && (
-                <span className="ml-2 text-sm text-text-muted line-through">
-                  {product.originalPrice.toLocaleString('vi-VN')}₫
-                </span>
-              )}
             </div>
-            {!isAdmin && product.stock > 0 && (
+            {!isAdmin && displayStock > 0 && (
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -144,7 +141,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                     navigate('/login');
                     return;
                   }
-                  addToCart(product);
+                  addToCart(defaultCartProduct);
                 }}
                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-brand text-white transition-shadow hover:shadow-lg"
                 aria-label={`Thêm ${product.name} vào giỏ hàng`}

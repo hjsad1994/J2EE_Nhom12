@@ -10,9 +10,10 @@ public interface CartService {
 
   CartResponse addItem(String userId, CartItemRequest request);
 
-  CartResponse updateItemQuantity(String userId, String productId, int quantity);
+  CartResponse updateItemQuantity(
+      String userId, String productId, String color, String storage, int quantity);
 
-  CartResponse removeItem(String userId, String productId);
+  CartResponse removeItem(String userId, String productId, String color, String storage);
 
   /**
    * Merge a guest cart (from localStorage) with the server cart on login. Items present only
