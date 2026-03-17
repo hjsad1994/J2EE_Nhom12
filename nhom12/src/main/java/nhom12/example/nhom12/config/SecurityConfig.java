@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import nhom12.example.nhom12.security.CustomOAuth2UserService;
 import nhom12.example.nhom12.security.JwtAuthenticationFilter;
 import nhom12.example.nhom12.security.OAuth2AuthenticationSuccessHandler;
+import org.springframework.core.env.Environment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,9 +29,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+  private static final String DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:8080";
+  private static final String DEFAULT_OAUTH2_FAILURE_URL =
+      "http://localhost:5173/login?error=google_failed";
+
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final CustomOAuth2UserService customOAuth2UserService;
   private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+  private final Environment environment;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -75,7 +81,9 @@ public class SecurityConfig {
                 oauth2
                     .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                     .successHandler(oAuth2AuthenticationSuccessHandler)
-                    .failureUrl("http://localhost:5173/login?error=google_failed"))
+                    .failureUrl(
+                        environment.getProperty(
+                            "app.oauth2.failure-url", DEFAULT_OAUTH2_FAILURE_URL)))
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
@@ -84,7 +92,7 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:8080"));
+    configuration.setAllowedOrigins(getConfiguredOrigins());
     configuration.setAllowedMethods(
         Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     configuration.setAllowedHeaders(
@@ -95,5 +103,14 @@ public class SecurityConfig {
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;
+  }
+
+  private List<String> getConfiguredOrigins() {
+    String configuredOrigins =
+        environment.getProperty("app.cors.allowed-origins", DEFAULT_ALLOWED_ORIGINS);
+    return Arrays.stream(configuredOrigins.split(","))
+        .map(String::trim)
+        .filter(origin -> !origin.isEmpty())
+        .toList();
   }
 }
