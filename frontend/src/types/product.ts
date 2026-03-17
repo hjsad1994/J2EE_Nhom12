@@ -1,6 +1,7 @@
 export interface ProductVariant {
   color: string;
   storage: string;
+  image: string;
   price: number;
   stock: number;
 }

@@ -15,6 +15,7 @@ public class ProductVariant {
 
   private String color;
   private String storage;
+  private String image;
   private double price;
   private int stock;
 }

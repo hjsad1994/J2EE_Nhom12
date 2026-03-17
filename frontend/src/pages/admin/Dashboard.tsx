@@ -138,6 +138,7 @@ export function Component() {
   const [newVariant, setNewVariant] = useState<ProductVariant>({
     color: '',
     storage: '',
+    image: '',
     price: 0,
     stock: 0,
   });
@@ -147,6 +148,7 @@ export function Component() {
   const [editingVariantData, setEditingVariantData] = useState<ProductVariant>({
     color: '',
     storage: '',
+    image: '',
     price: 0,
     stock: 0,
   });
@@ -223,7 +225,7 @@ export function Component() {
   const openCreateProduct = () => {
     setEditingProduct(null);
     setProductForm(emptyProductForm);
-    setNewVariant({ color: '', storage: '', price: 0, stock: 0 });
+    setNewVariant({ color: '', storage: '', image: '', price: 0, stock: 0 });
     setEditingVariantIndex(null);
     setShowProductForm(true);
   };
@@ -241,20 +243,48 @@ export function Component() {
       badge: p.badge ?? '',
       specs: p.specs ?? '',
       stock: p.stock ?? 0,
-      variants: p.variants ?? [],
+      variants:
+        p.variants?.map((variant) => ({
+          ...variant,
+          image: variant.image ?? '',
+        })) ?? [],
     });
-    setNewVariant({ color: '', storage: '', price: 0, stock: 0 });
+    setNewVariant({ color: '', storage: '', image: '', price: 0, stock: 0 });
     setEditingVariantIndex(null);
     setShowProductForm(true);
   };
 
   const startEditVariant = (index: number, v: ProductVariant) => {
     setEditingVariantIndex(index);
-    setEditingVariantData({ ...v });
+    setEditingVariantData({ ...v, image: v.image ?? '' });
+  };
+
+  const isDuplicateVariant = (
+    candidate: Pick<ProductVariant, 'color' | 'storage'>,
+    ignoreIndex?: number,
+  ) => {
+    const normalizedColor = candidate.color.trim().toLowerCase();
+    const normalizedStorage = candidate.storage.trim().toLowerCase();
+
+    return (productForm.variants ?? []).some((variant, index) => {
+      if (ignoreIndex !== undefined && index === ignoreIndex) {
+        return false;
+      }
+
+      return (
+        variant.color.trim().toLowerCase() === normalizedColor &&
+        variant.storage.trim().toLowerCase() === normalizedStorage
+      );
+    });
   };
 
   const saveEditVariant = () => {
     if (editingVariantIndex === null) return;
+    if (isDuplicateVariant(editingVariantData, editingVariantIndex)) {
+      addToast('error', 'Biến thể với màu sắc và dung lượng này đã tồn tại');
+      return;
+    }
+
     setProductForm((prev) => ({
       ...prev,
       variants: (prev.variants ?? []).map((v, i) =>
@@ -268,11 +298,16 @@ export function Component() {
 
   const handleAddVariant = () => {
     if (!newVariant.color.trim() || !newVariant.storage.trim()) return;
+    if (isDuplicateVariant(newVariant)) {
+      addToast('error', 'Biến thể với màu sắc và dung lượng này đã tồn tại');
+      return;
+    }
+
     setProductForm((prev) => ({
       ...prev,
       variants: [...(prev.variants ?? []), { ...newVariant }],
     }));
-    setNewVariant({ color: '', storage: '', price: 0, stock: 0 });
+    setNewVariant({ color: '', storage: '', image: '', price: 0, stock: 0 });
   };
 
   const handleRemoveVariant = (index: number) => {
@@ -327,7 +362,7 @@ export function Component() {
     }
   };
 
-  const handleImageUpload = async (file: File) => {
+  const uploadImageFile = async (file: File) => {
     setUploadingImage(true);
     try {
       const formData = new FormData();
@@ -338,16 +373,34 @@ export function Component() {
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } },
       );
-      const url = res.data.data;
-      setProductForm((prev) => ({ ...prev, image: url }));
       addToast('success', 'Upload ảnh thành công');
+      return res.data.data;
     } catch (err: unknown) {
       const axiosErr = err as ApiError;
       const msg = axiosErr.response?.data?.message || 'Upload ảnh thất bại';
       addToast('error', msg);
+      return null;
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    const url = await uploadImageFile(file);
+    if (!url) return;
+    setProductForm((prev) => ({ ...prev, image: url }));
+  };
+
+  const handleVariantImageUpload = async (file: File, mode: 'new' | 'edit') => {
+    const url = await uploadImageFile(file);
+    if (!url) return;
+
+    if (mode === 'new') {
+      setNewVariant((prev) => ({ ...prev, image: url }));
+      return;
+    }
+
+    setEditingVariantData((prev) => ({ ...prev, image: url }));
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -1741,6 +1794,55 @@ export function Component() {
                               </div>
                             ))}
                           </div>
+                          <div className="mt-2">
+                            <p className="mb-0.5 text-[10px] font-semibold text-gray-400">
+                              Ảnh biến thể
+                            </p>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                              <input
+                                type="text"
+                                value={editingVariantData.image}
+                                onChange={(e) =>
+                                  setEditingVariantData((prev) => ({
+                                    ...prev,
+                                    image: e.target.value,
+                                  }))
+                                }
+                                placeholder="URL ảnh riêng cho biến thể này"
+                                className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
+                              />
+                              <label
+                                className={`inline-flex cursor-pointer items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                                  uploadingImage
+                                    ? 'cursor-wait bg-gray-100 text-gray-400'
+                                    : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                }`}
+                              >
+                                <Upload className="h-3.5 w-3.5" />
+                                {uploadingImage ? 'Đang tải...' : 'Upload'}
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp,image/gif"
+                                  className="hidden"
+                                  disabled={uploadingImage}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      void handleVariantImageUpload(file, 'edit');
+                                    }
+                                    e.target.value = '';
+                                  }}
+                                />
+                              </label>
+                            </div>
+                            {editingVariantData.image && (
+                              <img
+                                src={editingVariantData.image}
+                                alt={`${editingVariantData.color} ${editingVariantData.storage}`}
+                                className="mt-2 h-16 w-16 rounded-lg border border-gray-200 object-cover"
+                              />
+                            )}
+                          </div>
                           <div className="mt-2 flex gap-2">
                             <button
                               type="button"
@@ -1765,6 +1867,13 @@ export function Component() {
                           className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
                         >
                           <div className="flex flex-wrap items-center gap-2">
+                            {v.image && (
+                              <img
+                                src={v.image}
+                                alt={`${v.color} ${v.storage}`}
+                                className="h-10 w-10 rounded-lg border border-gray-200 object-cover"
+                              />
+                            )}
                             <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">
                               {v.color}
                             </span>
@@ -1874,6 +1983,55 @@ export function Component() {
                       className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
                     />
                   </div>
+                </div>
+                <div className="mt-2">
+                  <label className="mb-1 block text-[11px] font-semibold text-gray-400">
+                    Ảnh biến thể
+                  </label>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                    <input
+                      type="text"
+                      placeholder="URL ảnh riêng cho màu sắc này"
+                      value={newVariant.image}
+                      onChange={(e) =>
+                        setNewVariant((prev) => ({
+                          ...prev,
+                          image: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200"
+                    />
+                    <label
+                      className={`inline-flex cursor-pointer items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                        uploadingImage
+                          ? 'cursor-wait bg-gray-100 text-gray-400'
+                          : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                      }`}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      {uploadingImage ? 'Đang tải...' : 'Upload'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        disabled={uploadingImage}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            void handleVariantImageUpload(file, 'new');
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {newVariant.image && (
+                    <img
+                      src={newVariant.image}
+                      alt={`${newVariant.color || 'Biến thể mới'} ${newVariant.storage}`}
+                      className="mt-2 h-16 w-16 rounded-lg border border-gray-200 object-cover"
+                    />
+                  )}
                 </div>
                 <button
                   type="button"

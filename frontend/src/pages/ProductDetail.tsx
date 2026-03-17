@@ -62,6 +62,11 @@ export function Component() {
   }, [myReview, editingReviewId]);
 
   useEffect(() => {
+    setSelectedColor('');
+    setSelectedStorage('');
+  }, [id]);
+
+  useEffect(() => {
     if (!id) return;
     setLoading(true);
     apiClient
@@ -223,6 +228,16 @@ export function Component() {
         ) ?? null)
       : null;
 
+  const selectedColorVariant: ProductVariant | null =
+    hasVariants && selectedColor
+      ? (product.variants!.find(
+          (v) => v.color === selectedColor && v.image.trim() !== '',
+        ) ?? null)
+      : null;
+
+  const displayImage =
+    selectedVariant?.image || selectedColorVariant?.image || product.image;
+
   const effectivePrice = selectedVariant
     ? selectedVariant.price
     : product.price;
@@ -310,14 +325,14 @@ export function Component() {
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
-            className="relative flex items-center justify-center rounded-3xl bg-surface-alt p-12"
-          >
-            <motion.img
-              src={product.image}
-              alt={product.name}
-              className="relative z-10 max-h-[400px] w-auto object-contain"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
+              className="relative flex items-center justify-center rounded-3xl bg-surface-alt p-12"
+            >
+              <motion.img
+                src={displayImage}
+                alt={product.name}
+                className="relative z-10 max-h-[400px] w-auto object-contain"
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 100 }}
               whileHover={{ scale: 1.05 }}
             />
@@ -479,6 +494,7 @@ export function Component() {
                       if (canAddToCart)
                         addToCart({
                           ...product,
+                          image: displayImage,
                           price: effectivePrice,
                           stock: effectiveStock,
                         });
@@ -500,6 +516,7 @@ export function Component() {
                       if (!canAddToCart) return;
                       addToCart({
                         ...product,
+                        image: displayImage,
                         price: effectivePrice,
                         stock: effectiveStock,
                       });
