@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { useCartStore } from '@/store/useCartStore';
+
 export interface AuthUser {
   id: string;
   username: string;
@@ -20,21 +22,23 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
       user: null,
       isLoggedIn: false,
       isAdmin: false,
 
-      login: (token, user) =>
-        set({
-          token,
-          user,
-          isLoggedIn: true,
-          isAdmin: user.role === 'ADMIN',
-        }),
+      login: (token, user) => {
+        // Clear cart if a different user is logging in (e.g., user switches account)
+        const currentUser = get().user;
+        if (currentUser && currentUser.id !== user.id) {
+          useCartStore.getState().clear();
+        }
+        set({ token, user, isLoggedIn: true, isAdmin: user.role === 'ADMIN' });
+      },
 
       logout: () => {
+        useCartStore.getState().clear();
         set({ token: null, user: null, isLoggedIn: false, isAdmin: false });
       },
 

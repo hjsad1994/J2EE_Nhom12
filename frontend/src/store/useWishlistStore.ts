@@ -86,3 +86,10 @@ export const useWishlistStore = create<WishlistState>()(
     },
   ),
 );
+
+// Clear local wishlist when user logs out, so the next user doesn't see stale data
+useAuthStore.subscribe((state, prev) => {
+  if (prev.isLoggedIn && !state.isLoggedIn) {
+    useWishlistStore.getState().clearLocal();
+  }
+});
