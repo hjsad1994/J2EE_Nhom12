@@ -14,7 +14,7 @@ public class ProductMapper {
         .name(request.getName())
         .brand(request.getBrand())
         .categoryId(request.getCategoryId())
-        .price(request.getPrice())
+        .price(request.getPrice() != null ? request.getPrice() : 0.0)
         .originalPrice(request.getOriginalPrice())
         .image(request.getImage())
         .rating(request.getRating() != null ? request.getRating() : 0.0)

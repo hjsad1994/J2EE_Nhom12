@@ -2,7 +2,6 @@ package nhom12.example.nhom12.dto.request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,7 +23,6 @@ public class CreateProductRequest {
 
   private String categoryId;
 
-  @NotNull(message = "Price is required")
   @Min(value = 0, message = "Price must be non-negative")
   private Double price;
 
