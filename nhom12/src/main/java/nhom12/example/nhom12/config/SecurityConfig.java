@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 import nhom12.example.nhom12.security.CustomOAuth2UserService;
 import nhom12.example.nhom12.security.JwtAuthenticationFilter;
 import nhom12.example.nhom12.security.OAuth2AuthenticationSuccessHandler;
-import org.springframework.core.env.Environment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -29,7 +29,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private static final String DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:8080";
+  private static final String DEFAULT_ALLOWED_ORIGINS =
+      "http://localhost:5173,http://localhost:8080";
   private static final String DEFAULT_OAUTH2_FAILURE_URL =
       "http://localhost:5173/login?error=google_failed";
 
