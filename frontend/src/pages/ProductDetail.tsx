@@ -325,14 +325,14 @@ export function Component() {
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
-              className="relative flex items-center justify-center rounded-3xl bg-surface-alt p-12"
-            >
-              <motion.img
-                src={displayImage}
-                alt={product.name}
-                className="relative z-10 max-h-[400px] w-auto object-contain"
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
+            className="relative flex items-center justify-center rounded-3xl bg-surface-alt p-12"
+          >
+            <motion.img
+              src={displayImage}
+              alt={product.name}
+              className="relative z-10 max-h-[400px] w-auto object-contain"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 100 }}
               whileHover={{ scale: 1.05 }}
             />

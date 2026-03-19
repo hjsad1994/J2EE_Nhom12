@@ -1828,7 +1828,10 @@ export function Component() {
                                   onChange={(e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
-                                      void handleVariantImageUpload(file, 'edit');
+                                      void handleVariantImageUpload(
+                                        file,
+                                        'edit',
+                                      );
                                     }
                                     e.target.value = '';
                                   }}
