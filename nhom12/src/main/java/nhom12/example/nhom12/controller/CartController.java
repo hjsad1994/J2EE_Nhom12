@@ -11,6 +11,7 @@ import nhom12.example.nhom12.model.User;
 import nhom12.example.nhom12.repository.UserRepository;
 import nhom12.example.nhom12.service.CartService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('USER')")
 public class CartController {
 
   private final CartService cartService;
