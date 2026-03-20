@@ -20,6 +20,10 @@ public class Order extends BaseDocument {
 
   @Indexed private String userId;
 
+  /** Idempotency key: unique order code prevents duplicate order submissions. */
+  @Indexed(unique = true)
+  private String orderCode;
+
   private String email;
   private String customerName;
   private String phone;

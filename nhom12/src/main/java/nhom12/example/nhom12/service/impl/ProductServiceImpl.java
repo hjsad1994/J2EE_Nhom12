@@ -18,6 +18,7 @@ import nhom12.example.nhom12.service.ProductService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +32,13 @@ public class ProductServiceImpl implements ProductService {
   private final OrderRepository orderRepository;
   private final ProductMapper productMapper;
 
+  /**
+   * Creates a product with its initial stock atomically. The @Transactional annotation ensures that
+   * if anything fails during product creation (e.g., validation, Cloudinary image save), the
+   * partial state is rolled back and no incomplete product is persisted.
+   */
   @Override
+  @Transactional
   public ProductResponse createProduct(CreateProductRequest request) {
     Product product = productMapper.toEntity(request);
     return toResponse(productRepository.save(product));
@@ -72,6 +79,7 @@ public class ProductServiceImpl implements ProductService {
     product.setBadge(request.getBadge());
     product.setSpecs(request.getSpecs());
     product.setStock(request.getStock() != null ? request.getStock() : product.getStock());
+    product.setVariants(request.getVariants());
 
     return toResponse(productRepository.save(product));
   }

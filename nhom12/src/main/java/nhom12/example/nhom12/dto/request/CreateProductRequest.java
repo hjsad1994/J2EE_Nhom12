@@ -3,10 +3,12 @@ package nhom12.example.nhom12.dto.request;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import nhom12.example.nhom12.model.ProductVariant;
 
 @Getter
 @Setter
@@ -37,4 +39,6 @@ public class CreateProductRequest {
 
   @Min(value = 0, message = "Stock must be non-negative")
   private Integer stock = 0;
+
+  private List<ProductVariant> variants;
 }

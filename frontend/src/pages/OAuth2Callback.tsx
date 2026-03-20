@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useAuthStore, type AuthUser } from '@/store/useAuthStore';
+import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
 
 export const Component = OAuth2Callback;
@@ -22,6 +23,7 @@ function OAuth2Callback() {
     if (token && id && username && email && role) {
       const user: AuthUser = { id, username, email, role };
       login(token, user);
+      useCartStore.getState().mergeOnLogin();
       useWishlistStore.getState().fetch();
       navigate(role === 'ADMIN' ? '/admin' : '/', { replace: true });
     } else {

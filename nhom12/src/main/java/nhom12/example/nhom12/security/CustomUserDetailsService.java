@@ -23,9 +23,14 @@ public class CustomUserDetailsService implements UserDetailsService {
             .findByUsername(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
+    boolean enabled = !user.isBanned();
     return new org.springframework.security.core.userdetails.User(
         user.getUsername(),
-        user.getPassword(),
+        user.getPassword() != null ? user.getPassword() : "",
+        enabled,
+        true,
+        true,
+        enabled,
         Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
   }
 }

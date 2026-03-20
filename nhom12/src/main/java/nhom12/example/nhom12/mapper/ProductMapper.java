@@ -21,6 +21,7 @@ public class ProductMapper {
         .badge(request.getBadge())
         .specs(request.getSpecs())
         .stock(request.getStock() != null ? request.getStock() : 0)
+        .variants(request.getVariants())
         .build();
   }
 
@@ -42,6 +43,7 @@ public class ProductMapper {
         .badge(product.getBadge())
         .specs(product.getSpecs())
         .stock(product.getStock())
+        .variants(product.getVariants())
         .createdAt(product.getCreatedAt())
         .updatedAt(product.getUpdatedAt())
         .build();

@@ -8,16 +8,23 @@ import javax.crypto.spec.SecretKeySpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nhom12.example.nhom12.config.MoMoConfig;
-import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Order;
+import nhom12.example.nhom12.model.OrderItem;
 import nhom12.example.nhom12.model.enums.OrderStatus;
-import nhom12.example.nhom12.repository.OrderRepository;
+import nhom12.example.nhom12.repository.ProductRepository;
+import nhom12.example.nhom12.service.EmailService;
 import nhom12.example.nhom12.service.MoMoService;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -28,7 +35,9 @@ public class MoMoServiceImpl implements MoMoService {
   private static final String REQUEST_TYPE = "payWithMethod";
 
   private final MoMoConfig moMoConfig;
-  private final OrderRepository orderRepository;
+  private final ProductRepository productRepository;
+  private final EmailService emailService;
+  private final MongoTemplate mongoTemplate;
   private final RestTemplate restTemplate;
 
   @Override
@@ -143,7 +152,19 @@ public class MoMoServiceImpl implements MoMoService {
     return valid;
   }
 
+  /**
+   * Processes the MoMo payment callback atomically:
+   *
+   * <ul>
+   *   <li>Success: marks order PAID + CONFIRMED in one transaction.
+   *   <li>Failure: marks order FAILED + CANCELLED AND restores stock — both in one transaction.
+   * </ul>
+   *
+   * Without @Transactional, a crash between updating the order and restoring stock would leave the
+   * system in an inconsistent state (cancelled order but stock not restored).
+   */
   @Override
+  @Transactional
   public void processPaymentResult(Map<String, String> params) {
     String orderId = params.get("orderId");
     String resultCodeStr = params.get("resultCode");
@@ -156,28 +177,63 @@ public class MoMoServiceImpl implements MoMoService {
         resultCodeStr,
         transId);
 
-    Order order =
-        orderRepository
-            .findById(orderId)
-            .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
-
     int resultCode = Integer.parseInt(resultCodeStr);
+    Query pendingOrderQuery =
+        Query.query(Criteria.where("_id").is(orderId).and("paymentStatus").is("PENDING"));
+    Update update = new Update().set("momoTransId", transId);
+
     if (resultCode == 0) {
-      order.setPaymentStatus("PAID");
-      order.setStatus(OrderStatus.CONFIRMED);
-      order.setMomoTransId(transId);
+      update.set("paymentStatus", "PAID").set("status", OrderStatus.CONFIRMED);
+    } else {
+      update
+          .set("paymentStatus", "FAILED")
+          .set("status", OrderStatus.CANCELLED)
+          .set("cancelledBy", "SYSTEM")
+          .set(
+              "cancelReason",
+              message == null || message.isBlank() ? "Thanh toán MoMo thất bại" : message);
+    }
+
+    Order order =
+        mongoTemplate.findAndModify(
+            pendingOrderQuery,
+            update,
+            FindAndModifyOptions.options().returnNew(false),
+            Order.class);
+
+    if (order == null) {
+      log.info(
+          "[MoMo] Skip callback for orderId={} because it was already processed or no longer"
+              + " pending",
+          orderId);
+      return;
+    }
+
+    if (resultCode == 0) {
+      emailService.sendOrderConfirmationEmail(
+          order.getEmail(), order.getCustomerName(), order.getOrderCode(), order.getTotal());
       log.info("[MoMo] Payment successful for orderId={}, transId={}", orderId, transId);
     } else {
-      order.setPaymentStatus("FAILED");
-      order.setStatus(OrderStatus.CANCELLED);
+      // Restore stock atomically with order cancellation
+      restoreStock(order);
       log.warn(
-          "[MoMo] Payment failed for orderId={}, resultCode={}, message={}",
+          "[MoMo] Payment failed for orderId={}, resultCode={}, message={}. Stock restored.",
           orderId,
           resultCode,
           message);
     }
+  }
 
-    orderRepository.save(order);
+  private void restoreStock(Order order) {
+    for (OrderItem item : order.getItems()) {
+      productRepository
+          .findById(item.getProductId())
+          .ifPresent(
+              product -> {
+                product.setStock(product.getStock() + item.getQuantity());
+                productRepository.save(product);
+              });
+    }
   }
 
   private String hmacSHA256(String data, String key) {

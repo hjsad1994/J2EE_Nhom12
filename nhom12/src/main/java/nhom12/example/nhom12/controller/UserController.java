@@ -92,6 +92,19 @@ public class UserController {
     return ResponseEntity.ok(ApiResponse.success(users, "Users retrieved successfully"));
   }
 
+  @PatchMapping("/{id}/ban")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<UserResponse>> toggleBan(
+      @PathVariable String id, @AuthenticationPrincipal UserDetails principal) {
+    String requesterId = resolveUserId(principal);
+    if (requesterId.equals(id)) {
+      throw new nhom12.example.nhom12.exception.BadRequestException(
+          "Không thể tự khóa tài khoản của chính mình");
+    }
+    return ResponseEntity.ok(
+        ApiResponse.success(userService.toggleBan(id), "Ban status updated successfully"));
+  }
+
   @PatchMapping("/{id}/role")
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<UserResponse>> updateRole(

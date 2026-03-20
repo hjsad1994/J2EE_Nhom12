@@ -25,7 +25,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import type { AbsaResult } from '@/types/absa';
-import type { Product } from '@/types/product';
+import type { Product, ProductVariant } from '@/types/product';
 import type { CreateReviewPayload, Review } from '@/types/review';
 
 export function Component() {
@@ -49,6 +49,8 @@ export function Component() {
   const [reviewImages, setReviewImages] = useState<string[]>([]);
   const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedStorage, setSelectedStorage] = useState('');
 
   const myReview = reviews.find((r) => r.userId === user?.id);
 
@@ -58,6 +60,11 @@ export function Component() {
     setReviewComment('');
     setReviewImages([]);
   }, [myReview, editingReviewId]);
+
+  useEffect(() => {
+    setSelectedColor('');
+    setSelectedStorage('');
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -206,8 +213,61 @@ export function Component() {
     );
   }
 
+  const hasVariants = (product.variants?.length ?? 0) > 0;
+  const uniqueColors = hasVariants
+    ? [...new Set(product.variants!.map((v) => v.color))]
+    : [];
+  const uniqueStorages = hasVariants
+    ? [...new Set(product.variants!.map((v) => v.storage))]
+    : [];
+
+  const selectedVariant: ProductVariant | null =
+    hasVariants && selectedColor && selectedStorage
+      ? (product.variants!.find(
+          (v) => v.color === selectedColor && v.storage === selectedStorage,
+        ) ?? null)
+      : null;
+
+  const selectedColorVariant: ProductVariant | null =
+    hasVariants && selectedColor
+      ? (product.variants!.find(
+          (v) => v.color === selectedColor && v.image.trim() !== '',
+        ) ?? null)
+      : null;
+
+  const displayImage =
+    selectedVariant?.image || selectedColorVariant?.image || product.image;
+
+  const effectivePrice = selectedVariant
+    ? selectedVariant.price
+    : product.price;
+  // -1 means variants exist but none selected yet
+  const effectiveStock = hasVariants
+    ? selectedVariant
+      ? selectedVariant.stock
+      : -1
+    : product.stock;
+
+  const canAddToCart =
+    effectiveStock > 0 &&
+    (!hasVariants ||
+      (selectedColor !== '' &&
+        selectedStorage !== '' &&
+        selectedVariant !== null));
+
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color);
+    const storagesForColor =
+      product.variants
+        ?.filter((v) => v.color === color)
+        .map((v) => v.storage) ?? [];
+    if (selectedStorage && !storagesForColor.includes(selectedStorage)) {
+      setSelectedStorage('');
+    }
+  };
+
   const discount = product.originalPrice
-    ? Math.round((1 - product.price / product.originalPrice) * 100)
+    ? Math.round((1 - effectivePrice / product.originalPrice) * 100)
     : null;
 
   const sentimentStyles: Record<AbsaResult['sentiment'], string> = {
@@ -268,7 +328,7 @@ export function Component() {
             className="relative flex items-center justify-center rounded-3xl bg-surface-alt p-12"
           >
             <motion.img
-              src={product.image}
+              src={displayImage}
               alt={product.name}
               className="relative z-10 max-h-[400px] w-auto object-contain"
               initial={{ scale: 0.9 }}
@@ -322,7 +382,7 @@ export function Component() {
 
             <div className="mt-6 flex items-end gap-3">
               <span className="font-display text-4xl font-bold text-brand">
-                {product.price.toLocaleString('vi-VN')}đ
+                {effectivePrice.toLocaleString('vi-VN')}đ
               </span>
               {product.originalPrice && (
                 <>
@@ -336,56 +396,80 @@ export function Component() {
               )}
             </div>
 
-            <div className="mt-6">
-              <p className="mb-2 text-sm font-medium text-text-secondary">
-                Màu sắc
-              </p>
-              <div className="flex gap-2">
-                {[
-                  'bg-zinc-800',
-                  'bg-zinc-400',
-                  'bg-amber-700',
-                  'bg-blue-900',
-                ].map((color, index) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className={`h-8 w-8 cursor-pointer rounded-full ${color} ring-2 ring-offset-2 ring-offset-surface transition-all ${
-                      index === 0
-                        ? 'ring-brand'
-                        : 'ring-transparent hover:ring-border-strong'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
+            {hasVariants && (
+              <>
+                <div className="mt-6">
+                  <p className="mb-2 text-sm font-medium text-text-secondary">
+                    Màu sắc
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueColors.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => handleColorSelect(color)}
+                        className={`cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                          selectedColor === color
+                            ? 'border-brand-accent bg-brand-subtle text-brand-accent'
+                            : 'border-border bg-surface text-text-secondary hover:border-border-strong'
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <p className="mb-2 text-sm font-medium text-text-secondary">
+                    Dung lượng
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueStorages.map((storage) => {
+                      const isAvailable =
+                        !selectedColor ||
+                        product.variants!.some(
+                          (v) =>
+                            v.color === selectedColor && v.storage === storage,
+                        );
+                      return (
+                        <button
+                          key={storage}
+                          type="button"
+                          disabled={!isAvailable}
+                          onClick={() => setSelectedStorage(storage)}
+                          className={`cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+                            selectedStorage === storage
+                              ? 'border-brand-accent bg-brand-subtle text-brand-accent'
+                              : 'border-border bg-surface text-text-secondary hover:border-border-strong'
+                          }`}
+                        >
+                          {storage}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {selectedColor && selectedStorage && !selectedVariant && (
+                  <p className="mt-2 text-sm text-red-500">
+                    Phiên bản này hiện không có sẵn.
+                  </p>
+                )}
+                {(!selectedColor || !selectedStorage) && (
+                  <p className="mt-3 text-sm text-amber-600">
+                    Vui lòng chọn màu sắc và dung lượng để xem giá và tình trạng
+                    hàng.
+                  </p>
+                )}
+              </>
+            )}
 
             <div className="mt-6">
-              <p className="mb-2 text-sm font-medium text-text-secondary">
-                Dung lượng
-              </p>
-              <div className="flex gap-2">
-                {['128GB', '256GB', '512GB', '1TB'].map((size, index) => (
-                  <button
-                    key={size}
-                    type="button"
-                    className={`cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
-                      index === 1
-                        ? 'border-brand-accent bg-brand-subtle text-brand-accent'
-                        : 'border-border bg-surface text-text-secondary hover:border-border-strong'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-6">
-              {product.stock > 0 ? (
+              {effectiveStock === -1 ? null : effectiveStock > 0 ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
                   <Check className="h-3.5 w-3.5" />
-                  Còn hàng ({product.stock} sản phẩm)
+                  Còn hàng ({effectiveStock} sản phẩm)
                 </span>
               ) : (
                 <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700">
@@ -394,47 +478,79 @@ export function Component() {
               )}
             </div>
 
-            {!isAdmin && product.stock > 0 && (
-              <div className="mt-8 flex gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => addToCart(product)}
-                  className="btn-primary flex flex-1 items-center justify-center gap-2 py-4"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  Thêm vào giỏ hàng
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    addToCart(product);
-                    navigate('/checkout');
-                  }}
-                  className="btn-outline px-6 py-4"
-                >
-                  Mua ngay
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => toggleWishlist(product)}
-                  className={`flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 transition-colors ${
-                    isWishlisted
-                      ? 'border-red-200 bg-red-50 text-red-500 hover:border-red-300 hover:bg-red-100'
-                      : 'border-border bg-surface text-text-secondary hover:border-brand-accent hover:text-brand-accent'
-                  }`}
-                  aria-label={
-                    isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'
-                  }
-                >
-                  <Heart
-                    className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`}
-                  />
-                </motion.button>
-              </div>
-            )}
+            {!isAdmin &&
+              (effectiveStock > 0 ||
+                (hasVariants && effectiveStock === -1)) && (
+                <div className="mt-8 flex gap-3">
+                  <motion.button
+                    whileHover={{ scale: canAddToCart ? 1.02 : 1 }}
+                    whileTap={{ scale: canAddToCart ? 0.98 : 1 }}
+                    disabled={!canAddToCart}
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        navigate('/login');
+                        return;
+                      }
+                      if (canAddToCart)
+                        addToCart({
+                          ...product,
+                          image: displayImage,
+                          price: effectivePrice,
+                          stock: effectiveStock,
+                        });
+                    }}
+                    className="btn-primary flex flex-1 items-center justify-center gap-2 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    Thêm vào giỏ hàng
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: canAddToCart ? 1.02 : 1 }}
+                    whileTap={{ scale: canAddToCart ? 0.98 : 1 }}
+                    disabled={!canAddToCart}
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        navigate('/login');
+                        return;
+                      }
+                      if (!canAddToCart) return;
+                      addToCart({
+                        ...product,
+                        image: displayImage,
+                        price: effectivePrice,
+                        stock: effectiveStock,
+                      });
+                      navigate('/checkout');
+                    }}
+                    className="btn-outline px-6 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Mua ngay
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        navigate('/login');
+                        return;
+                      }
+                      toggleWishlist(product);
+                    }}
+                    className={`flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 transition-colors ${
+                      isWishlisted
+                        ? 'border-red-200 bg-red-50 text-red-500 hover:border-red-300 hover:bg-red-100'
+                        : 'border-border bg-surface text-text-secondary hover:border-brand-accent hover:text-brand-accent'
+                    }`}
+                    aria-label={
+                      isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'
+                    }
+                  >
+                    <Heart
+                      className={`h-6 w-6 ${isWishlisted ? 'fill-current' : ''}`}
+                    />
+                  </motion.button>
+                </div>
+              )}
 
             <div className="mt-8 grid grid-cols-3 gap-3">
               {[

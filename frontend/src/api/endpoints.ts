@@ -28,6 +28,12 @@ export const ENDPOINTS = {
   MOMO: {
     CREATE: (orderId: string) => `/momo/create?orderId=${orderId}`,
   },
+  CART: {
+    BASE: '/cart',
+    ITEMS: '/cart/items',
+    ITEM: (productId: string) => `/cart/items/${productId}`,
+    SYNC: '/cart/sync',
+  },
   WISHLIST: {
     BASE: '/wishlist',
     TOGGLE: (productId: string) => `/wishlist/${productId}`,
@@ -45,5 +51,6 @@ export const ENDPOINTS = {
     CHANGE_PASSWORD: '/users/me/password',
     SETUP_PASSWORD: '/users/me/setup-password',
     ROLE: (id: string) => `/users/${id}/role`,
+    BAN: (id: string) => `/users/${id}/ban`,
   },
 } as const;

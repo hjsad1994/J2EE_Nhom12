@@ -1,13 +1,23 @@
 import { Check, ShoppingBag, XCircle } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
+
+import { useCartStore } from '@/store/useCartStore';
 
 export const Component = CheckoutResult;
 
 function CheckoutResult() {
   const [searchParams] = useSearchParams();
+  const clear = useCartStore((s) => s.clear);
   const success = searchParams.get('success') === 'true';
   const orderId = searchParams.get('orderId') ?? 'N/A';
+
+  useEffect(() => {
+    if (success) {
+      clear();
+    }
+  }, [clear, success]);
 
   if (success) {
     return (

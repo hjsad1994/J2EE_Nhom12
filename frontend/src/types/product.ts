@@ -1,3 +1,11 @@
+export interface ProductVariant {
+  color: string;
+  storage: string;
+  image: string;
+  price: number;
+  stock: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -11,6 +19,7 @@ export interface Product {
   badge?: string;
   specs?: string;
   stock: number;
+  variants?: ProductVariant[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -26,6 +35,7 @@ export interface CreateProductPayload {
   badge?: string;
   specs?: string;
   stock?: number;
+  variants?: ProductVariant[];
 }
 
 export interface Category {

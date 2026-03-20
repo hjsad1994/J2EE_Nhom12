@@ -16,6 +16,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
+  orderCode?: string;
   userId: string;
   email: string;
   customerName: string;
@@ -47,6 +48,7 @@ export interface CreateOrderPayload {
   district: string;
   ward: string;
   note?: string;
+  idempotencyKey?: string;
   paymentMethod: string;
   items: OrderItem[];
 }

@@ -156,8 +156,11 @@ function Profile() {
     }
   };
 
-  const canCancel = (status: string) =>
-    status === 'PENDING' || status === 'CONFIRMED';
+  const canCancel = (order: Order) => {
+    if (order.status !== 'PENDING' && order.status !== 'CONFIRMED')
+      return false;
+    return order.paymentStatus !== 'PAID';
+  };
 
   const initial = (user?.username ?? 'U').charAt(0).toUpperCase();
 
@@ -598,7 +601,7 @@ function Profile() {
                             </div>
 
                             {/* Cancel button */}
-                            {canCancel(order.status) && (
+                            {canCancel(order) && (
                               <div className="mt-4 flex justify-end border-t border-border pt-4">
                                 <button
                                   type="button"

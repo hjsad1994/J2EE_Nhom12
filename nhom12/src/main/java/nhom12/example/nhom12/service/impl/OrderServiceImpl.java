@@ -1,9 +1,11 @@
 package nhom12.example.nhom12.service.impl;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import nhom12.example.nhom12.dto.request.CreateOrderRequest;
 import nhom12.example.nhom12.dto.response.OrderResponse;
@@ -15,11 +17,15 @@ import nhom12.example.nhom12.model.Product;
 import nhom12.example.nhom12.model.enums.OrderStatus;
 import nhom12.example.nhom12.repository.OrderRepository;
 import nhom12.example.nhom12.repository.ProductRepository;
+import nhom12.example.nhom12.service.EmailService;
 import nhom12.example.nhom12.service.OrderService;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,39 +51,60 @@ public class OrderServiceImpl implements OrderService {
   private final OrderRepository orderRepository;
   private final ProductRepository productRepository;
   private final SimpMessagingTemplate messagingTemplate;
+  private final EmailService emailService;
 
+  /**
+   * Creates an order atomically:
+   *
+   * <ol>
+   *   <li>Validate and deduct stock using Optimistic Locking (@Version on Product).
+   *   <li>Persist order in the same MongoDB transaction.
+   *   <li>If any step fails, the entire transaction rolls back (stock is restored automatically).
+   *   <li>Duplicate orderCode (idempotency key) is rejected with a user-friendly error.
+   * </ol>
+   */
   @Override
+  @Transactional
   public OrderResponse createOrder(String userId, CreateOrderRequest request) {
-    List<OrderItem> items =
-        request.getItems().stream()
-            .map(
-                i -> {
-                  Product product =
-                      productRepository
-                          .findById(i.getProductId())
-                          .orElseThrow(
-                              () ->
-                                  new ResourceNotFoundException("Product", "id", i.getProductId()));
+    // Use client-supplied idempotency key or generate a server-side UUID
+    String orderCode =
+        (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank())
+            ? request.getIdempotencyKey()
+            : UUID.randomUUID().toString();
 
-                  // Check stock availability
-                  if (product.getStock() < i.getQuantity()) {
-                    throw new BadRequestException(
-                        "Sản phẩm '"
-                            + product.getName()
-                            + "' chỉ còn "
-                            + product.getStock()
-                            + " sản phẩm trong kho");
-                  }
+    List<OrderItem> items = new ArrayList<>();
 
-                  return buildOrderItem(product, i.getQuantity());
-                })
-            .toList();
+    // Single-pass: validate stock, deduct, and build order items
+    // Optimistic Locking: productRepository.save() throws OptimisticLockingFailureException
+    // if the product's @Version field was modified by a concurrent request since we loaded it.
+    try {
+      for (var itemReq : request.getItems()) {
+        Product product =
+            productRepository
+                .findById(itemReq.getProductId())
+                .orElseThrow(
+                    () -> new ResourceNotFoundException("Product", "id", itemReq.getProductId()));
 
-    // Deduct stock
-    for (var i : request.getItems()) {
-      Product product = productRepository.findById(i.getProductId()).orElseThrow();
-      product.setStock(product.getStock() - i.getQuantity());
-      productRepository.save(product);
+        if (product.getStock() < itemReq.getQuantity()) {
+          throw new BadRequestException(
+              "Sản phẩm '"
+                  + product.getName()
+                  + "' chỉ còn "
+                  + product.getStock()
+                  + " sản phẩm trong kho");
+        }
+
+        // Deduct stock — if a concurrent order modified this product between our read and this
+        // save, MongoDB will detect the @Version mismatch and throw
+        // OptimisticLockingFailureException
+        product.setStock(product.getStock() - itemReq.getQuantity());
+        productRepository.save(product);
+
+        items.add(buildOrderItem(product, itemReq.getQuantity()));
+      }
+    } catch (OptimisticLockingFailureException e) {
+      // Another request updated the product's stock concurrently (e.g., Flash Sale)
+      throw new BadRequestException("Sản phẩm vừa được cập nhật bởi người khác. Vui lòng thử lại.");
     }
 
     double subtotal = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
@@ -87,6 +114,7 @@ public class OrderServiceImpl implements OrderService {
     Order order =
         Order.builder()
             .userId(userId)
+            .orderCode(orderCode)
             .email(request.getEmail())
             .customerName(request.getCustomerName())
             .phone(request.getPhone())
@@ -104,7 +132,28 @@ public class OrderServiceImpl implements OrderService {
             .total(total)
             .build();
 
-    return toResponse(orderRepository.save(order));
+    // DuplicateKeyException: orderCode unique index blocks duplicate submissions.
+    // This catches cases where the same idempotency key is reused (client retry on network error).
+    try {
+      Order saved = orderRepository.save(order);
+      // COD orders are confirmed immediately by store workflow; MoMo orders will only send
+      // confirmation after the gateway reports a successful payment.
+      if (!"MOMO".equalsIgnoreCase(saved.getPaymentMethod())) {
+        emailService.sendOrderConfirmationEmail(
+            saved.getEmail(), saved.getCustomerName(), saved.getOrderCode(), saved.getTotal());
+      }
+      return toResponse(saved);
+    } catch (DuplicateKeyException e) {
+      return orderRepository
+          .findByOrderCode(orderCode)
+          .map(this::toResponse)
+          .orElseThrow(
+              () ->
+                  new BadRequestException(
+                      "Đơn hàng với mã '"
+                          + orderCode
+                          + "' đã tồn tại. Yêu cầu này đã được xử lý trước đó."));
+    }
   }
 
   private OrderItem buildOrderItem(Product product, int quantity) {
@@ -139,6 +188,7 @@ public class OrderServiceImpl implements OrderService {
   }
 
   @Override
+  @Transactional
   public OrderResponse updateStatus(String id, OrderStatus newStatus) {
     Order order =
         orderRepository
@@ -159,9 +209,13 @@ public class OrderServiceImpl implements OrderService {
               + allowed);
     }
 
-    // Restore stock when order is cancelled
+    // Restore stock when order is cancelled (atomic within this transaction)
     if (newStatus == OrderStatus.CANCELLED) {
+      if ("PAID".equals(order.getPaymentStatus())) {
+        throw new BadRequestException("Đơn hàng đã thanh toán. Hãy hoàn tiền trước khi hủy.");
+      }
       restoreStock(order);
+      order.setPaymentStatus("FAILED");
       order.setCancelledBy("ADMIN");
       order.setCancelReason("Hủy bởi quản trị viên");
     }
@@ -192,6 +246,7 @@ public class OrderServiceImpl implements OrderService {
   }
 
   @Override
+  @Transactional
   public OrderResponse cancelOrder(String orderId, String userId, String cancelReason) {
     Order order =
         orderRepository
@@ -211,7 +266,11 @@ public class OrderServiceImpl implements OrderService {
               + order.getStatus());
     }
 
-    // Restore stock
+    if ("PAID".equals(order.getPaymentStatus())) {
+      throw new BadRequestException("Đơn hàng đã thanh toán và cần hoàn tiền trước khi hủy.");
+    }
+
+    // Restore stock (atomic within this transaction)
     restoreStock(order);
 
     order.setStatus(OrderStatus.CANCELLED);
@@ -221,7 +280,7 @@ public class OrderServiceImpl implements OrderService {
     return toResponse(orderRepository.save(order));
   }
 
-  /** Restore product stock when an order is cancelled. */
+  /** Restore product stock when an order is cancelled. Must be called within a transaction. */
   private void restoreStock(Order order) {
     for (OrderItem item : order.getItems()) {
       productRepository
@@ -237,6 +296,7 @@ public class OrderServiceImpl implements OrderService {
   private OrderResponse toResponse(Order o) {
     return OrderResponse.builder()
         .id(o.getId())
+        .orderCode(o.getOrderCode())
         .userId(o.getUserId())
         .email(o.getEmail())
         .customerName(o.getCustomerName())

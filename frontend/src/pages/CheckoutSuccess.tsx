@@ -1,16 +1,26 @@
 import { Check, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useEffect } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
+
+import { useCartStore } from '@/store/useCartStore';
 
 export const Component = CheckoutSuccess;
 
 function CheckoutSuccess() {
   const location = useLocation();
+  const clear = useCartStore((s) => s.clear);
   const state = location.state as {
     fromCheckout?: boolean;
     orderId?: string;
   } | null;
   const fromCheckout = state?.fromCheckout;
+
+  useEffect(() => {
+    if (fromCheckout) {
+      clear();
+    }
+  }, [clear, fromCheckout]);
 
   // Prevent direct URL access — only allow navigation from checkout flow
   if (!fromCheckout) {

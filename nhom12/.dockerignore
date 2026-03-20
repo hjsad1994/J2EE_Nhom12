@@ -1,0 +1,6 @@
+target
+.env
+.env.*
+run.log
+e2e-backend.log
+e2e-backend.err.log

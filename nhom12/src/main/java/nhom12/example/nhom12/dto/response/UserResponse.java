@@ -20,6 +20,7 @@ public class UserResponse {
   private String email;
   private Role role;
   private boolean hasPassword;
+  private boolean banned;
   private String authProvider; // "LOCAL", "GOOGLE", or "GOOGLE_AND_LOCAL"
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;

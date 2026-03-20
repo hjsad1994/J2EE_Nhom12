@@ -137,6 +137,37 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
+  public UserResponse toggleBan(String id) {
+    User user =
+        userRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+
+    // Prevent banning the last admin
+    if (user.getRole() == Role.ADMIN && !user.isBanned()) {
+      long adminCount = userRepository.countByRole(Role.ADMIN);
+      if (adminCount <= 1) {
+        throw new BadRequestException(
+            "Không thể khóa admin cuối cùng. Hệ thống cần ít nhất một admin.");
+      }
+    }
+
+    boolean nowBanned = !user.isBanned();
+    user.setBanned(nowBanned);
+    UserResponse response = userMapper.toResponse(userRepository.save(user));
+
+    // Notify the affected user in real-time via WebSocket
+    String message =
+        nowBanned
+            ? "Tài khoản của bạn đã bị khóa bởi quản trị viên."
+            : "Tài khoản của bạn đã được mở khóa. Bạn có thể đăng nhập lại.";
+    messagingTemplate.convertAndSendToUser(
+        id, "/queue/ban-status", Map.of("banned", nowBanned, "message", message));
+
+    return response;
+  }
+
+  @Override
   public void resetPassword(String userId, String newPassword) {
     User user =
         userRepository

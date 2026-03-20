@@ -6,6 +6,7 @@ import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
 import type { ApiResponse } from '@/api/types';
 import { useAuthStore, type AuthUser } from '@/store/useAuthStore';
+import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
 
 interface AuthResponse {
@@ -48,6 +49,8 @@ export function Component() {
       );
       const { token, ...user } = res.data.data;
       login(token, user as AuthUser);
+      // Merge guest cart into server cart, then fetch wishlist — both fire in parallel
+      useCartStore.getState().mergeOnLogin();
       useWishlistStore.getState().fetch();
       navigate(user.role === 'ADMIN' ? '/admin' : '/');
     } catch (err: unknown) {
