@@ -124,6 +124,12 @@ function Checkout() {
   const shippingVoucherOptions = availableVouchers.filter(
     (voucher) => voucher.type === 'SHIPPING',
   );
+  const selectedProductVoucher =
+    productVoucherOptions.find((voucher) => voucher.code === productVoucherCode) ??
+    null;
+  const selectedShippingVoucher =
+    shippingVoucherOptions.find((voucher) => voucher.code === shippingVoucherCode) ??
+    null;
   const pricing = voucherSummary ?? {
     subtotal: totalPrice,
     originalShippingFee: defaultShippingFee,
@@ -246,6 +252,7 @@ function Checkout() {
     value: string,
     onChange: (nextValue: string) => void,
     options: Voucher[],
+    selectedVoucher: Voucher | null,
     appliedCode?: string | null,
   ) => (
     <div className="space-y-2 rounded-xl border border-border bg-surface-alt p-4">
@@ -288,18 +295,51 @@ function Checkout() {
             {voucherOptionsLoading
               ? 'Dang tai voucher...'
               : options.length > 0
-                ? 'Chon voucher phu hop'
-                : 'Khong co voucher kha dung'}
+                ? 'Chon voucher'
+                : 'Khong co voucher nao'}
           </option>
           {options.map((voucher) => (
-            <option key={voucher.id} value={voucher.code}>
+            <option
+              key={voucher.id}
+              value={voucher.code}
+              disabled={!voucher.usable}
+            >
               {voucher.code}
               {voucher.description ? ` - ${voucher.description}` : ''}
+              {voucher.estimatedDiscountAmount != null
+                ? ` - Giam du kien ${voucher.estimatedDiscountAmount.toLocaleString('vi-VN')}₫`
+                : ''}
+              {!voucher.usable && voucher.unusableReason
+                ? ` - ${voucher.unusableReason}`
+                : ''}
             </option>
           ))}
         </select>
         <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-text-muted" />
       </div>
+      {selectedVoucher && (
+        <div
+          className={`rounded-lg px-3 py-2 text-xs ${
+            selectedVoucher.usable
+              ? 'bg-green-50 text-green-700'
+              : 'bg-amber-50 text-amber-700'
+          }`}
+        >
+          <p className="font-semibold">{selectedVoucher.code}</p>
+          {selectedVoucher.description && (
+            <p className="mt-1">{selectedVoucher.description}</p>
+          )}
+          {selectedVoucher.estimatedDiscountAmount != null && (
+            <p className="mt-1">
+              Giam du kien:{' '}
+              {selectedVoucher.estimatedDiscountAmount.toLocaleString('vi-VN')}₫
+            </p>
+          )}
+          {!selectedVoucher.usable && selectedVoucher.unusableReason && (
+            <p className="mt-1">{selectedVoucher.unusableReason}</p>
+          )}
+        </div>
+      )}
       {appliedCode && (
         <p className="text-xs font-medium text-green-600">
           Đang áp dụng: {appliedCode}
@@ -483,6 +523,7 @@ function Checkout() {
                   productVoucherCode,
                   setProductVoucherCode,
                   productVoucherOptions,
+                  selectedProductVoucher,
                   voucherSummary?.productVoucher?.code,
                 )}
                 {renderVoucherInput(
@@ -492,6 +533,7 @@ function Checkout() {
                   shippingVoucherCode,
                   setShippingVoucherCode,
                   shippingVoucherOptions,
+                  selectedShippingVoucher,
                   voucherSummary?.shippingVoucher?.code,
                 )}
                 <button

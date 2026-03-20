@@ -25,6 +25,8 @@ export interface Voucher {
   endAt?: string | null;
   active: boolean;
   usable: boolean;
+  estimatedDiscountAmount?: number | null;
+  unusableReason?: string | null;
 }
 
 export interface VoucherValidation {

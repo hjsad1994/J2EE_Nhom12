@@ -1,6 +1,7 @@
 package nhom12.example.nhom12.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import nhom12.example.nhom12.dto.request.CreateOrderRequest;
@@ -21,6 +22,11 @@ import nhom12.example.nhom12.model.enums.VoucherType;
 import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.repository.VoucherRepository;
 import nhom12.example.nhom12.service.VoucherService;
+import org.bson.Document;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -32,6 +38,7 @@ public class VoucherServiceImpl implements VoucherService {
 
   private final VoucherRepository voucherRepository;
   private final ProductRepository productRepository;
+  private final MongoTemplate mongoTemplate;
 
   @Override
   public VoucherResponse createVoucher(CreateVoucherRequest request) {
@@ -43,7 +50,7 @@ public class VoucherServiceImpl implements VoucherService {
         });
 
     Voucher voucher = voucherRepository.save(mapToVoucher(Voucher.builder(), request, normalizedCode).build());
-    return toResponse(voucher, isVoucherUsable(voucher, voucher.getMinOrderValue()));
+    return toResponse(voucher, voucher.getMinOrderValue());
   }
 
   @Override
@@ -60,7 +67,7 @@ public class VoucherServiceImpl implements VoucherService {
         });
 
     Voucher updated = voucherRepository.save(mapToVoucher(Voucher.builder().id(existing.getId()).createdAt(existing.getCreatedAt()).updatedAt(existing.getUpdatedAt()).usedCount(existing.getUsedCount()), request, normalizedCode).build());
-    return toResponse(updated, isVoucherUsable(updated, updated.getMinOrderValue()));
+    return toResponse(updated, updated.getMinOrderValue());
   }
 
   @Override
@@ -73,7 +80,13 @@ public class VoucherServiceImpl implements VoucherService {
   @Override
   public List<VoucherResponse> getAllVouchers() {
     return voucherRepository.findAllSorted().stream()
-        .map(voucher -> toResponse(voucher, isVoucherUsable(voucher, voucher.getMinOrderValue())))
+        .map(
+            voucher ->
+                toResponse(
+                    voucher,
+                    voucher.getType() == VoucherType.SHIPPING
+                        ? DEFAULT_SHIPPING_FEE
+                        : voucher.getMinOrderValue()))
         .toList();
   }
 
@@ -83,12 +96,14 @@ public class VoucherServiceImpl implements VoucherService {
     double shippingFee = calculateShippingFee(subtotal);
 
     return voucherRepository.findAllSorted().stream()
-        .map(
-            voucher -> {
-              double baseAmount = voucher.getType() == VoucherType.SHIPPING ? shippingFee : subtotal;
-              return toResponse(voucher, isVoucherUsable(voucher, baseAmount));
+        .map(voucher -> toResponse(voucher, getBaseAmount(voucher, subtotal, shippingFee)))
+        .sorted(
+            (left, right) -> {
+              if (left.isUsable() == right.isUsable()) {
+                return left.getCode().compareToIgnoreCase(right.getCode());
+              }
+              return left.isUsable() ? -1 : 1;
             })
-        .filter(VoucherResponse::isUsable)
         .toList();
   }
 
@@ -135,10 +150,12 @@ public class VoucherServiceImpl implements VoucherService {
       return;
     }
 
-    voucherRepository.findById(appliedVoucher.getVoucherId()).ifPresent(voucher -> {
-      voucher.setUsedCount(Math.max(voucher.getUsedCount() + delta, 0));
-      voucherRepository.save(voucher);
-    });
+    if (delta > 0) {
+      reserveVoucherUsage(appliedVoucher.getVoucherId(), appliedVoucher.getCode());
+      return;
+    }
+
+    releaseVoucherUsage(appliedVoucher.getVoucherId());
   }
 
   private double calculateSubtotal(List<CreateOrderRequest.OrderItemRequest> items) {
@@ -202,12 +219,7 @@ public class VoucherServiceImpl implements VoucherService {
   }
 
   private boolean isVoucherUsable(Voucher voucher, double baseAmount) {
-    try {
-      validateVoucher(voucher, baseAmount);
-      return true;
-    } catch (BadRequestException ex) {
-      return false;
-    }
+    return getVoucherUnusableReason(voucher, baseAmount) == null;
   }
 
   private AppliedVoucher applyVoucher(Voucher voucher, double baseAmount) {
@@ -249,6 +261,48 @@ public class VoucherServiceImpl implements VoucherService {
     return String.format("%,.0fđ", value);
   }
 
+  private double getBaseAmount(Voucher voucher, double subtotal, double shippingFee) {
+    return voucher.getType() == VoucherType.SHIPPING ? shippingFee : subtotal;
+  }
+
+  private String getVoucherUnusableReason(Voucher voucher, double baseAmount) {
+    try {
+      validateVoucher(voucher, baseAmount);
+      return null;
+    } catch (BadRequestException ex) {
+      return ex.getMessage();
+    }
+  }
+
+  private void reserveVoucherUsage(String voucherId, String voucherCode) {
+    Criteria availableCriteria =
+        new Criteria()
+            .orOperator(
+                Criteria.where("usageLimit").is(null),
+                Criteria.expr(
+                    new Document("$gt", Arrays.asList("$usageLimit", "$usedCount"))));
+
+    Query query =
+        new Query(new Criteria().andOperator(Criteria.where("_id").is(voucherId), availableCriteria));
+    long modified =
+        mongoTemplate
+            .updateFirst(query, new Update().inc("usedCount", 1), Voucher.class)
+            .getModifiedCount();
+
+    if (modified == 0) {
+      throw new BadRequestException(
+          "Voucher '" + voucherCode + "' vÃ¹a háº¿t lÆ°á»£t sá»­ dá»¥ng. Vui lÃ²ng chá»n mÃ£ khÃ¡c.");
+    }
+  }
+
+  private void releaseVoucherUsage(String voucherId) {
+    Query query =
+        new Query(
+            new Criteria().andOperator(
+                Criteria.where("_id").is(voucherId), Criteria.where("usedCount").gt(0)));
+    mongoTemplate.updateFirst(query, new Update().inc("usedCount", -1), Voucher.class);
+  }
+
   private ProductVariant findVariant(Product product, String color, String storage) {
     String normalizedColor = normalizeOption(color);
     String normalizedStorage = normalizeOption(storage);
@@ -282,7 +336,10 @@ public class VoucherServiceImpl implements VoucherService {
     return value == null ? "" : value.trim();
   }
 
-  private VoucherResponse toResponse(Voucher voucher, boolean usable) {
+  private VoucherResponse toResponse(Voucher voucher, double baseAmount) {
+    String unusableReason = getVoucherUnusableReason(voucher, baseAmount);
+    boolean usable = unusableReason == null;
+
     return VoucherResponse.builder()
         .id(voucher.getId())
         .code(voucher.getCode())
@@ -298,6 +355,9 @@ public class VoucherServiceImpl implements VoucherService {
         .endAt(voucher.getEndAt())
         .active(voucher.isActive())
         .usable(usable)
+        .estimatedDiscountAmount(
+            usable ? getDiscountAmount(applyVoucher(voucher, baseAmount)) : null)
+        .unusableReason(unusableReason)
         .build();
   }
 

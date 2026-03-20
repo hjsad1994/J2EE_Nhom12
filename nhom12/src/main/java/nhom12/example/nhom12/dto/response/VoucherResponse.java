@@ -29,4 +29,6 @@ public class VoucherResponse {
   private LocalDateTime endAt;
   private boolean active;
   private boolean usable;
+  private Double estimatedDiscountAmount;
+  private String unusableReason;
 }
