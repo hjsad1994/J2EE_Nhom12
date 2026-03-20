@@ -77,14 +77,15 @@ export default function AdminChatPanel() {
           ENDPOINTS.CHAT.ADMIN_MESSAGES(selectedId),
         );
         setMessages(res.data.data);
-        setConversations((prev) =>
-          prev.map((item) =>
+        setConversations((prev) => {
+          const next = prev.map((item) =>
             item.id === selectedId ? { ...item, unreadCountForAdmin: 0 } : item,
-          ),
-        );
-        setAdminUnreadCount((conversations
-          .filter((item) => item.id !== selectedId)
-          .reduce((total, item) => total + item.unreadCountForAdmin, 0)));
+          );
+          setAdminUnreadCount(
+            next.reduce((total, item) => total + item.unreadCountForAdmin, 0),
+          );
+          return next;
+        });
       } catch {
         addToast('error', 'Không thể tải tin nhắn');
       } finally {
@@ -93,7 +94,7 @@ export default function AdminChatPanel() {
     };
 
     void fetchMessages();
-  }, [addToast, conversations, selectedId, setAdminUnreadCount]);
+  }, [addToast, selectedId, setAdminUnreadCount]);
 
   useEffect(() => {
     if (!token) return;
