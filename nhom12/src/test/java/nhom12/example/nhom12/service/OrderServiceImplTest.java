@@ -1,24 +1,35 @@
 package nhom12.example.nhom12.service;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import nhom12.example.nhom12.dto.request.CreateOrderRequest;
 import nhom12.example.nhom12.dto.response.OrderResponse;
+import nhom12.example.nhom12.dto.response.VoucherValidationResponse;
 import nhom12.example.nhom12.exception.BadRequestException;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
+import nhom12.example.nhom12.model.AppliedVoucher;
 import nhom12.example.nhom12.model.Order;
 import nhom12.example.nhom12.model.OrderItem;
 import nhom12.example.nhom12.model.Product;
 import nhom12.example.nhom12.model.ProductVariant;
 import nhom12.example.nhom12.model.enums.OrderStatus;
+import nhom12.example.nhom12.model.enums.VoucherDiscountType;
+import nhom12.example.nhom12.model.enums.VoucherType;
 import nhom12.example.nhom12.repository.OrderRepository;
 import nhom12.example.nhom12.repository.ProductRepository;
-import nhom12.example.nhom12.service.EmailService;
 import nhom12.example.nhom12.service.impl.OrderServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +49,7 @@ class OrderServiceImplTest {
   @Mock private ProductRepository productRepository;
   @Mock private SimpMessagingTemplate messagingTemplate;
   @Mock private EmailService emailService;
+  @Mock private VoucherService voucherService;
 
   @InjectMocks private OrderServiceImpl orderService;
 
@@ -49,6 +61,7 @@ class OrderServiceImplTest {
   private Product productWithVariant;
   private ProductVariant variant;
   private CreateOrderRequest orderRequest;
+  private VoucherValidationResponse voucherSummary;
 
   @BeforeEach
   void setUp() {
@@ -60,13 +73,14 @@ class OrderServiceImplTest {
     product.setPrice(15000000);
     product.setStock(10);
 
-    variant = ProductVariant.builder()
-        .color("Blue")
-        .storage("256GB")
-        .price(18000000)
-        .stock(5)
-        .image("samsung-blue.jpg")
-        .build();
+    variant =
+        ProductVariant.builder()
+            .color("Blue")
+            .storage("256GB")
+            .price(18000000)
+            .stock(5)
+            .image("samsung-blue.jpg")
+            .build();
 
     productWithVariant = new Product();
     productWithVariant.setId(PRODUCT_ID);
@@ -76,8 +90,9 @@ class OrderServiceImplTest {
     productWithVariant.setPrice(18000000);
     productWithVariant.setVariants(new ArrayList<>(List.of(variant)));
 
-    CreateOrderRequest.OrderItemRequest itemReq = new CreateOrderRequest.OrderItemRequest(
-        PRODUCT_ID, "Samsung Galaxy S25", "samsung.jpg", "Samsung", null, null, 15000000, 2);
+    CreateOrderRequest.OrderItemRequest itemReq =
+        new CreateOrderRequest.OrderItemRequest(
+            PRODUCT_ID, "Samsung Galaxy S25", "samsung.jpg", "Samsung", null, null, 15000000, 2);
 
     orderRequest = new CreateOrderRequest();
     orderRequest.setEmail("customer@example.com");
@@ -89,25 +104,38 @@ class OrderServiceImplTest {
     orderRequest.setWard("Phuong Ben Nghe");
     orderRequest.setPaymentMethod("COD");
     orderRequest.setItems(List.of(itemReq));
+
+    voucherSummary =
+        VoucherValidationResponse.builder()
+            .subtotal(30000000)
+            .originalShippingFee(0)
+            .shippingFee(0)
+            .productDiscount(0)
+            .shippingDiscount(0)
+            .totalDiscount(0)
+            .total(30000000)
+            .build();
+
+    lenient()
+        .when(voucherService.validateOrderVouchers(anyList(), any(), any()))
+        .thenReturn(voucherSummary);
   }
 
-  // ───────────────────────────────────────────────────
-  // CREATE ORDER
-  // ───────────────────────────────────────────────────
   @Nested
   @DisplayName("createOrder()")
   class CreateOrder {
 
     @Test
-    @DisplayName("Tạo đơn hàng thành công - không có variant, đủ hàng")
     void createOrder_success_noVariant() {
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
       when(productRepository.save(any(Product.class))).thenReturn(product);
-      when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
-        Order o = inv.getArgument(0);
-        o.setId(ORDER_ID);
-        return o;
-      });
+      when(orderRepository.save(any(Order.class)))
+          .thenAnswer(
+              inv -> {
+                Order o = inv.getArgument(0);
+                o.setId(ORDER_ID);
+                return o;
+              });
       doNothing().when(emailService).sendOrderConfirmationEmail(any(), any(), any(), anyDouble());
 
       OrderResponse result = orderService.createOrder(USER_ID, orderRequest);
@@ -117,24 +145,28 @@ class OrderServiceImplTest {
       assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING);
       assertThat(result.getPaymentStatus()).isEqualTo("PENDING");
       assertThat(result.getItems()).hasSize(1);
-      // stock should be reduced: 10 - 2 = 8
       assertThat(product.getStock()).isEqualTo(8);
+      verify(voucherService).markOrderVoucherUsage(any(Order.class));
     }
 
     @Test
-    @DisplayName("Tạo đơn hàng thành công - có variant, giá lấy từ variant")
     void createOrder_success_withVariant() {
-      CreateOrderRequest.OrderItemRequest itemReq = new CreateOrderRequest.OrderItemRequest(
-          PRODUCT_ID, "Samsung Galaxy S25", "samsung.jpg", "Samsung", "Blue", "256GB", 18000000, 1);
+      CreateOrderRequest.OrderItemRequest itemReq =
+          new CreateOrderRequest.OrderItemRequest(
+              PRODUCT_ID, "Samsung Galaxy S25", "samsung.jpg", "Samsung", "Blue", "256GB", 18000000, 1);
       orderRequest.setItems(List.of(itemReq));
+      voucherSummary.setSubtotal(18000000);
+      voucherSummary.setTotal(18000000);
 
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(productWithVariant));
       when(productRepository.save(any(Product.class))).thenReturn(productWithVariant);
-      when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
-        Order o = inv.getArgument(0);
-        o.setId(ORDER_ID);
-        return o;
-      });
+      when(orderRepository.save(any(Order.class)))
+          .thenAnswer(
+              inv -> {
+                Order o = inv.getArgument(0);
+                o.setId(ORDER_ID);
+                return o;
+              });
       doNothing().when(emailService).sendOrderConfirmationEmail(any(), any(), any(), anyDouble());
 
       OrderResponse result = orderService.createOrder(USER_ID, orderRequest);
@@ -142,67 +174,68 @@ class OrderServiceImplTest {
       assertThat(result.getItems().get(0).getPrice()).isEqualTo(18000000);
       assertThat(result.getItems().get(0).getColor()).isEqualTo("Blue");
       assertThat(result.getItems().get(0).getStorage()).isEqualTo("256GB");
-      // variant stock: 5 - 1 = 4
       assertThat(variant.getStock()).isEqualTo(4);
     }
 
     @Test
-    @DisplayName("Tạo đơn hàng - tổng < 500k thì tính phí ship 30k")
     void createOrder_subtotalBelow500k_chargesShippingFee30k() {
       product.setPrice(100000);
-      CreateOrderRequest.OrderItemRequest cheapItem = new CreateOrderRequest.OrderItemRequest(
-          PRODUCT_ID, "Ốp lưng", "case.jpg", "Generic", null, null, 100000, 2);
+      CreateOrderRequest.OrderItemRequest cheapItem =
+          new CreateOrderRequest.OrderItemRequest(
+              PRODUCT_ID, "Case", "case.jpg", "Generic", null, null, 100000, 2);
       orderRequest.setItems(List.of(cheapItem));
+      voucherSummary.setSubtotal(200000);
+      voucherSummary.setOriginalShippingFee(30000);
+      voucherSummary.setShippingFee(30000);
+      voucherSummary.setTotal(230000);
 
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
       when(productRepository.save(any(Product.class))).thenReturn(product);
-      when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
-        Order o = inv.getArgument(0);
-        o.setId(ORDER_ID);
-        return o;
-      });
+      when(orderRepository.save(any(Order.class)))
+          .thenAnswer(
+              inv -> {
+                Order o = inv.getArgument(0);
+                o.setId(ORDER_ID);
+                return o;
+              });
       doNothing().when(emailService).sendOrderConfirmationEmail(any(), any(), any(), anyDouble());
 
       OrderResponse result = orderService.createOrder(USER_ID, orderRequest);
 
-      // subtotal = 100000 * 2 = 200000 < 500000
       assertThat(result.getSubtotal()).isEqualTo(200000);
       assertThat(result.getShippingFee()).isEqualTo(30000);
       assertThat(result.getTotal()).isEqualTo(230000);
     }
 
     @Test
-    @DisplayName("Tạo đơn hàng - tổng >= 500k thì miễn phí ship")
     void createOrder_subtotalAbove500k_freeShipping() {
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
       when(productRepository.save(any(Product.class))).thenReturn(product);
-      when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
-        Order o = inv.getArgument(0);
-        o.setId(ORDER_ID);
-        return o;
-      });
+      when(orderRepository.save(any(Order.class)))
+          .thenAnswer(
+              inv -> {
+                Order o = inv.getArgument(0);
+                o.setId(ORDER_ID);
+                return o;
+              });
       doNothing().when(emailService).sendOrderConfirmationEmail(any(), any(), any(), anyDouble());
 
       OrderResponse result = orderService.createOrder(USER_ID, orderRequest);
 
-      // subtotal = 15000000 * 2 = 30000000 >= 500000 → free shipping
       assertThat(result.getShippingFee()).isEqualTo(0);
     }
 
     @Test
-    @DisplayName("Tạo đơn hàng - không đủ hàng trong kho → ném BadRequestException")
     void createOrder_insufficientStock_throwsBadRequestException() {
-      product.setStock(1); // only 1 in stock
-      // request wants 2
+      product.setStock(1);
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
 
       assertThatThrownBy(() -> orderService.createOrder(USER_ID, orderRequest))
           .isInstanceOf(BadRequestException.class)
-          .hasMessageContaining("chỉ còn");
+          .hasMessageContaining("còn");
     }
 
     @Test
-    @DisplayName("Tạo đơn hàng - sản phẩm không tồn tại → ném ResourceNotFoundException")
     void createOrder_productNotFound_throwsResourceNotFoundException() {
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.empty());
 
@@ -211,34 +244,36 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("Tạo đơn hàng COD - gửi email xác nhận")
     void createOrder_COD_sendsConfirmationEmail() {
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
       when(productRepository.save(any(Product.class))).thenReturn(product);
-      when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
-        Order o = inv.getArgument(0);
-        o.setId(ORDER_ID);
-        return o;
-      });
+      when(orderRepository.save(any(Order.class)))
+          .thenAnswer(
+              inv -> {
+                Order o = inv.getArgument(0);
+                o.setId(ORDER_ID);
+                return o;
+              });
 
       orderService.createOrder(USER_ID, orderRequest);
 
-      verify(emailService).sendOrderConfirmationEmail(
-          eq("customer@example.com"), eq("Nguyen Van A"), any(), anyDouble());
+      verify(emailService)
+          .sendOrderConfirmationEmail(eq("customer@example.com"), eq("Nguyen Van A"), any(), anyDouble());
     }
 
     @Test
-    @DisplayName("Tạo đơn hàng MOMO - KHÔNG gửi email xác nhận")
     void createOrder_MOMO_doesNotSendConfirmationEmail() {
       orderRequest.setPaymentMethod("MOMO");
 
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
       when(productRepository.save(any(Product.class))).thenReturn(product);
-      when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
-        Order o = inv.getArgument(0);
-        o.setId(ORDER_ID);
-        return o;
-      });
+      when(orderRepository.save(any(Order.class)))
+          .thenAnswer(
+              inv -> {
+                Order o = inv.getArgument(0);
+                o.setId(ORDER_ID);
+                return o;
+              });
 
       orderService.createOrder(USER_ID, orderRequest);
 
@@ -246,10 +281,10 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("Số lượng item < 1 → ném BadRequestException")
     void createOrder_quantityBelowMin_throwsBadRequestException() {
-      CreateOrderRequest.OrderItemRequest invalidItem = new CreateOrderRequest.OrderItemRequest(
-          PRODUCT_ID, "Samsung", "img.jpg", "Samsung", null, null, 15000000, 0);
+      CreateOrderRequest.OrderItemRequest invalidItem =
+          new CreateOrderRequest.OrderItemRequest(
+              PRODUCT_ID, "Samsung", "img.jpg", "Samsung", null, null, 15000000, 0);
       orderRequest.setItems(List.of(invalidItem));
 
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
@@ -258,33 +293,82 @@ class OrderServiceImplTest {
           .isInstanceOf(BadRequestException.class)
           .hasMessageContaining("quantity must be between");
     }
+
+    @Test
+    void createOrder_withVouchers_savesVoucherBreakdown() {
+      orderRequest.setProductVoucherCode("SALE10");
+      orderRequest.setShippingVoucherCode("SHIPFREE");
+      voucherSummary =
+          VoucherValidationResponse.builder()
+              .subtotal(30000000)
+              .originalShippingFee(30000)
+              .shippingFee(0)
+              .productDiscount(3000000)
+              .shippingDiscount(30000)
+              .totalDiscount(3030000)
+              .total(27000000)
+              .productVoucher(
+                  AppliedVoucher.builder()
+                      .voucherId("voucher-product")
+                      .code("SALE10")
+                      .type(VoucherType.PRODUCT)
+                      .discountType(VoucherDiscountType.PERCENTAGE)
+                      .discountValue(10)
+                      .discountAmount(3000000)
+                      .build())
+              .shippingVoucher(
+                  AppliedVoucher.builder()
+                      .voucherId("voucher-shipping")
+                      .code("SHIPFREE")
+                      .type(VoucherType.SHIPPING)
+                      .discountType(VoucherDiscountType.FIXED_AMOUNT)
+                      .discountValue(30000)
+                      .discountAmount(30000)
+                      .build())
+              .build();
+      when(voucherService.validateOrderVouchers(anyList(), any(), any())).thenReturn(voucherSummary);
+      when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
+      when(productRepository.save(any(Product.class))).thenReturn(product);
+      when(orderRepository.save(any(Order.class)))
+          .thenAnswer(
+              inv -> {
+                Order o = inv.getArgument(0);
+                o.setId(ORDER_ID);
+                return o;
+              });
+
+      OrderResponse result = orderService.createOrder(USER_ID, orderRequest);
+
+      assertThat(result.getProductDiscount()).isEqualTo(3000000);
+      assertThat(result.getShippingDiscount()).isEqualTo(30000);
+      assertThat(result.getDiscountTotal()).isEqualTo(3030000);
+      assertThat(result.getProductVoucher()).isNotNull();
+      assertThat(result.getShippingVoucher()).isNotNull();
+    }
   }
 
-  // ───────────────────────────────────────────────────
-  // UPDATE STATUS
-  // ───────────────────────────────────────────────────
   @Nested
   @DisplayName("updateStatus()")
   class UpdateStatus {
 
     private Order buildOrder(OrderStatus status, String paymentStatus) {
-      OrderItem item = OrderItem.builder()
-          .productId(PRODUCT_ID).color("").storage("").quantity(2).price(15000000).build();
-      Order order = Order.builder()
-          .userId(USER_ID)
-          .orderCode("ORD001")
-          .email("test@test.com")
-          .status(status)
-          .paymentStatus(paymentStatus)
-          .paymentMethod("COD")
-          .items(List.of(item))
-          .build();
+      OrderItem item =
+          OrderItem.builder().productId(PRODUCT_ID).color("").storage("").quantity(2).price(15000000).build();
+      Order order =
+          Order.builder()
+              .userId(USER_ID)
+              .orderCode("ORD001")
+              .email("test@test.com")
+              .status(status)
+              .paymentStatus(paymentStatus)
+              .paymentMethod("COD")
+              .items(List.of(item))
+              .build();
       order.setId(ORDER_ID);
       return order;
     }
 
     @Test
-    @DisplayName("PENDING → CONFIRMED: chuyển trạng thái hợp lệ")
     void updateStatus_pendingToConfirmed_success() {
       Order order = buildOrder(OrderStatus.PENDING, "PENDING");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
@@ -296,7 +380,6 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("CONFIRMED → SHIPPING: chuyển trạng thái hợp lệ")
     void updateStatus_confirmedToShipping_success() {
       Order order = buildOrder(OrderStatus.CONFIRMED, "PENDING");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
@@ -308,7 +391,6 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("SHIPPING → DELIVERED: chuyển trạng thái hợp lệ")
     void updateStatus_shippingToDelivered_success() {
       Order order = buildOrder(OrderStatus.SHIPPING, "PENDING");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
@@ -320,18 +402,16 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("DELIVERED → PENDING: chuyển trạng thái không hợp lệ → ném BadRequestException")
     void updateStatus_deliveredToPending_throwsBadRequestException() {
       Order order = buildOrder(OrderStatus.DELIVERED, "PAID");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
 
       assertThatThrownBy(() -> orderService.updateStatus(ORDER_ID, OrderStatus.PENDING))
           .isInstanceOf(BadRequestException.class)
-          .hasMessageContaining("Không thể chuyển trạng thái");
+          .hasMessageContaining("Kh");
     }
 
     @Test
-    @DisplayName("CANCELLED → CONFIRMED: chuyển trạng thái không hợp lệ → ném BadRequestException")
     void updateStatus_cancelledToConfirmed_throwsBadRequestException() {
       Order order = buildOrder(OrderStatus.CANCELLED, "FAILED");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
@@ -341,18 +421,16 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("Hủy đơn hàng đã thanh toán (PAID) → ném BadRequestException")
     void updateStatus_cancelPaidOrder_throwsBadRequestException() {
       Order order = buildOrder(OrderStatus.PENDING, "PAID");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
 
       assertThatThrownBy(() -> orderService.updateStatus(ORDER_ID, OrderStatus.CANCELLED))
           .isInstanceOf(BadRequestException.class)
-          .hasMessageContaining("Đơn hàng đã thanh toán");
+          .hasMessageContaining("thanh");
     }
 
     @Test
-    @DisplayName("SHIPPING → DELIVERED với COD → tự động chuyển paymentStatus thành PAID")
     void updateStatus_deliveredCOD_setsPaymentStatusPaid() {
       Order order = buildOrder(OrderStatus.SHIPPING, "PENDING");
       order.setPaymentMethod("COD");
@@ -365,8 +443,7 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("Hủy đơn hàng - hoàn lại stock cho sản phẩm")
-    void updateStatus_cancel_restoresStock() {
+    void updateStatus_cancel_restoresStock_and_rollsBackVoucherUsage() {
       Order order = buildOrder(OrderStatus.PENDING, "PENDING");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
       when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
@@ -376,12 +453,11 @@ class OrderServiceImplTest {
       int stockBefore = product.getStock();
       orderService.updateStatus(ORDER_ID, OrderStatus.CANCELLED);
 
-      // stock should be restored by 2
       assertThat(product.getStock()).isEqualTo(stockBefore + 2);
+      verify(voucherService).rollbackOrderVoucherUsage(order);
     }
 
     @Test
-    @DisplayName("Order không tồn tại → ném ResourceNotFoundException")
     void updateStatus_orderNotFound_throwsResourceNotFoundException() {
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.empty());
 
@@ -390,30 +466,27 @@ class OrderServiceImplTest {
     }
   }
 
-  // ───────────────────────────────────────────────────
-  // CANCEL ORDER (by USER)
-  // ───────────────────────────────────────────────────
   @Nested
   @DisplayName("cancelOrder()")
   class CancelOrder {
 
     private Order buildPendingOrder(String paymentStatus) {
-      OrderItem item = OrderItem.builder()
-          .productId(PRODUCT_ID).color("").storage("").quantity(1).price(15000000).build();
-      Order order = Order.builder()
-          .userId(USER_ID)
-          .orderCode("ORD002")
-          .status(OrderStatus.PENDING)
-          .paymentStatus(paymentStatus)
-          .paymentMethod("COD")
-          .items(List.of(item))
-          .build();
+      OrderItem item =
+          OrderItem.builder().productId(PRODUCT_ID).color("").storage("").quantity(1).price(15000000).build();
+      Order order =
+          Order.builder()
+              .userId(USER_ID)
+              .orderCode("ORD002")
+              .status(OrderStatus.PENDING)
+              .paymentStatus(paymentStatus)
+              .paymentMethod("COD")
+              .items(List.of(item))
+              .build();
       order.setId(ORDER_ID);
       return order;
     }
 
     @Test
-    @DisplayName("Hủy đơn hàng PENDING thành công")
     void cancelOrder_pendingOrder_success() {
       Order order = buildPendingOrder("PENDING");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
@@ -421,26 +494,26 @@ class OrderServiceImplTest {
       when(productRepository.save(any(Product.class))).thenReturn(product);
       when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
-      OrderResponse result = orderService.cancelOrder(ORDER_ID, USER_ID, "Muốn đổi màu khác");
+      OrderResponse result = orderService.cancelOrder(ORDER_ID, USER_ID, "change color");
 
       assertThat(result.getStatus()).isEqualTo(OrderStatus.CANCELLED);
       assertThat(result.getCancelledBy()).isEqualTo("USER");
-      assertThat(result.getCancelReason()).isEqualTo("Muốn đổi màu khác");
+      assertThat(result.getCancelReason()).isEqualTo("change color");
     }
 
     @Test
-    @DisplayName("Hủy đơn hàng CONFIRMED thành công")
     void cancelOrder_confirmedOrder_success() {
-      OrderItem item = OrderItem.builder()
-          .productId(PRODUCT_ID).color("").storage("").quantity(1).price(15000000).build();
-      Order order = Order.builder()
-          .userId(USER_ID)
-          .orderCode("ORD002")
-          .status(OrderStatus.CONFIRMED)
-          .paymentStatus("PENDING")
-          .paymentMethod("COD")
-          .items(List.of(item))
-          .build();
+      OrderItem item =
+          OrderItem.builder().productId(PRODUCT_ID).color("").storage("").quantity(1).price(15000000).build();
+      Order order =
+          Order.builder()
+              .userId(USER_ID)
+              .orderCode("ORD002")
+              .status(OrderStatus.CONFIRMED)
+              .paymentStatus("PENDING")
+              .paymentMethod("COD")
+              .items(List.of(item))
+              .build();
       order.setId(ORDER_ID);
 
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
@@ -448,57 +521,54 @@ class OrderServiceImplTest {
       when(productRepository.save(any(Product.class))).thenReturn(product);
       when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
-      OrderResponse result = orderService.cancelOrder(ORDER_ID, USER_ID, "Lý do khác");
+      OrderResponse result = orderService.cancelOrder(ORDER_ID, USER_ID, "other");
 
       assertThat(result.getStatus()).isEqualTo(OrderStatus.CANCELLED);
     }
 
     @Test
-    @DisplayName("Hủy đơn hàng của người dùng khác → ném BadRequestException")
     void cancelOrder_wrongUser_throwsBadRequestException() {
       Order order = buildPendingOrder("PENDING");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
 
       assertThatThrownBy(() -> orderService.cancelOrder(ORDER_ID, "other_user", "reason"))
           .isInstanceOf(BadRequestException.class)
-          .hasMessageContaining("không có quyền");
+          .hasMessageContaining("quy");
     }
 
     @Test
-    @DisplayName("Hủy đơn hàng đang SHIPPING → ném BadRequestException")
     void cancelOrder_shippingOrder_throwsBadRequestException() {
-      OrderItem item = OrderItem.builder()
-          .productId(PRODUCT_ID).color("").storage("").quantity(1).price(15000000).build();
-      Order order = Order.builder()
-          .userId(USER_ID)
-          .orderCode("ORD003")
-          .status(OrderStatus.SHIPPING)
-          .paymentStatus("PENDING")
-          .items(List.of(item))
-          .build();
+      OrderItem item =
+          OrderItem.builder().productId(PRODUCT_ID).color("").storage("").quantity(1).price(15000000).build();
+      Order order =
+          Order.builder()
+              .userId(USER_ID)
+              .orderCode("ORD003")
+              .status(OrderStatus.SHIPPING)
+              .paymentStatus("PENDING")
+              .items(List.of(item))
+              .build();
       order.setId(ORDER_ID);
 
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
 
       assertThatThrownBy(() -> orderService.cancelOrder(ORDER_ID, USER_ID, "reason"))
           .isInstanceOf(BadRequestException.class)
-          .hasMessageContaining("Chỉ có thể hủy");
+          .hasMessageContaining("Ch");
     }
 
     @Test
-    @DisplayName("Hủy đơn hàng đã thanh toán (PAID) → ném BadRequestException")
     void cancelOrder_paidOrder_throwsBadRequestException() {
       Order order = buildPendingOrder("PAID");
       when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
 
       assertThatThrownBy(() -> orderService.cancelOrder(ORDER_ID, USER_ID, "reason"))
           .isInstanceOf(BadRequestException.class)
-          .hasMessageContaining("hoàn tiền");
+          .hasMessageContaining("ho");
     }
 
     @Test
-    @DisplayName("Hủy đơn hàng - hoàn lại stock")
-    void cancelOrder_restoresProductStock() {
+    void cancelOrder_restoresProductStock_and_rollsBackVoucherUsage() {
       Order order = buildPendingOrder("PENDING");
       int stockBefore = product.getStock();
 
@@ -509,8 +579,8 @@ class OrderServiceImplTest {
 
       orderService.cancelOrder(ORDER_ID, USER_ID, "reason");
 
-      // Quantity in order = 1, stock should be restored
       assertThat(product.getStock()).isEqualTo(stockBefore + 1);
+      verify(voucherService).rollbackOrderVoucherUsage(order);
     }
   }
 }

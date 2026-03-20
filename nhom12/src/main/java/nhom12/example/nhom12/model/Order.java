@@ -36,8 +36,14 @@ public class Order extends BaseDocument {
   private OrderStatus status;
   private List<OrderItem> items;
   private double subtotal;
+  private double productDiscount;
+  private double shippingDiscount;
+  private double discountTotal;
+  private double originalShippingFee;
   private double shippingFee;
   private double total;
+  private AppliedVoucher productVoucher;
+  private AppliedVoucher shippingVoucher;
 
   // Payment tracking
   private String paymentStatus; // PENDING, PAID, FAILED

@@ -9,6 +9,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import nhom12.example.nhom12.dto.request.CreateOrderRequest;
 import nhom12.example.nhom12.dto.response.OrderResponse;
+import nhom12.example.nhom12.dto.response.VoucherValidationResponse;
 import nhom12.example.nhom12.exception.BadRequestException;
 import nhom12.example.nhom12.exception.ResourceNotFoundException;
 import nhom12.example.nhom12.model.Order;
@@ -20,6 +21,7 @@ import nhom12.example.nhom12.repository.OrderRepository;
 import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.service.EmailService;
 import nhom12.example.nhom12.service.OrderService;
+import nhom12.example.nhom12.service.VoucherService;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
@@ -53,6 +55,7 @@ public class OrderServiceImpl implements OrderService {
   private final ProductRepository productRepository;
   private final SimpMessagingTemplate messagingTemplate;
   private final EmailService emailService;
+  private final VoucherService voucherService;
 
   @Override
   @Transactional
@@ -98,9 +101,9 @@ public class OrderServiceImpl implements OrderService {
           "Sản phẩm vừa được cập nhật bởi người khác. Vui lòng thử lại.");
     }
 
-    double subtotal = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
-    double shippingFee = subtotal >= 500000 ? 0 : 30000;
-    double total = subtotal + shippingFee;
+    VoucherValidationResponse voucherSummary =
+        voucherService.validateOrderVouchers(
+            request.getItems(), request.getProductVoucherCode(), request.getShippingVoucherCode());
 
     Order order =
         Order.builder()
@@ -118,13 +121,20 @@ public class OrderServiceImpl implements OrderService {
             .status(OrderStatus.PENDING)
             .paymentStatus("PENDING")
             .items(items)
-            .subtotal(subtotal)
-            .shippingFee(shippingFee)
-            .total(total)
+            .subtotal(voucherSummary.getSubtotal())
+            .productDiscount(voucherSummary.getProductDiscount())
+            .shippingDiscount(voucherSummary.getShippingDiscount())
+            .discountTotal(voucherSummary.getTotalDiscount())
+            .originalShippingFee(voucherSummary.getOriginalShippingFee())
+            .shippingFee(voucherSummary.getShippingFee())
+            .total(voucherSummary.getTotal())
+            .productVoucher(voucherSummary.getProductVoucher())
+            .shippingVoucher(voucherSummary.getShippingVoucher())
             .build();
 
     try {
       Order saved = orderRepository.save(order);
+      voucherService.markOrderVoucherUsage(saved);
       if (!"MOMO".equalsIgnoreCase(saved.getPaymentMethod())) {
         emailService.sendOrderConfirmationEmail(
             saved.getEmail(), saved.getCustomerName(), saved.getOrderCode(), saved.getTotal());
@@ -203,6 +213,7 @@ public class OrderServiceImpl implements OrderService {
         throw new BadRequestException("Đơn hàng đã thanh toán. Hãy hoàn tiền trước khi hủy.");
       }
       restoreStock(order);
+      voucherService.rollbackOrderVoucherUsage(order);
       order.setPaymentStatus("FAILED");
       order.setCancelledBy("ADMIN");
       order.setCancelReason("Hủy bởi quản trị viên");
@@ -254,6 +265,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     restoreStock(order);
+    voucherService.rollbackOrderVoucherUsage(order);
 
     order.setStatus(OrderStatus.CANCELLED);
     order.setPaymentStatus("FAILED");
@@ -347,8 +359,14 @@ public class OrderServiceImpl implements OrderService {
         .status(order.getStatus())
         .items(order.getItems())
         .subtotal(order.getSubtotal())
+        .productDiscount(order.getProductDiscount())
+        .shippingDiscount(order.getShippingDiscount())
+        .discountTotal(order.getDiscountTotal())
+        .originalShippingFee(order.getOriginalShippingFee())
         .shippingFee(order.getShippingFee())
         .total(order.getTotal())
+        .productVoucher(order.getProductVoucher())
+        .shippingVoucher(order.getShippingVoucher())
         .createdAt(order.getCreatedAt())
         .paymentStatus(order.getPaymentStatus())
         .momoTransId(order.getMomoTransId())

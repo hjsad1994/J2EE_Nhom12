@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import nhom12.example.nhom12.model.AppliedVoucher;
 import nhom12.example.nhom12.model.OrderItem;
 import nhom12.example.nhom12.model.enums.OrderStatus;
 
@@ -32,8 +33,14 @@ public class OrderResponse {
   private OrderStatus status;
   private List<OrderItem> items;
   private double subtotal;
+  private double productDiscount;
+  private double shippingDiscount;
+  private double discountTotal;
+  private double originalShippingFee;
   private double shippingFee;
   private double total;
+  private AppliedVoucher productVoucher;
+  private AppliedVoucher shippingVoucher;
   private LocalDateTime createdAt;
   private String paymentStatus;
   private String momoTransId;

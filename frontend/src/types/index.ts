@@ -3,3 +3,4 @@
  * Re-export from specific type files.
  */
 export * from './common';
+export * from './voucher';

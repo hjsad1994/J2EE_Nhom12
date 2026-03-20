@@ -523,6 +523,21 @@ function Profile() {
                                   </span>
                                 </div>
                               )}
+                              {(order.productVoucher || order.shippingVoucher) && (
+                                <div className="sm:col-span-2">
+                                  <span className="text-text-muted">
+                                    Voucher:{' '}
+                                  </span>
+                                  <span className="font-medium text-text-primary">
+                                    {[
+                                      order.productVoucher?.code,
+                                      order.shippingVoucher?.code,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(' · ')}
+                                  </span>
+                                </div>
+                              )}
                             </div>
 
                             {/* Cancel reason info */}
@@ -584,14 +599,40 @@ function Profile() {
                                   {order.subtotal.toLocaleString('vi-VN')}₫
                                 </span>
                               </div>
+                              {order.productDiscount > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                  <span>
+                                    Giảm sản phẩm
+                                    {order.productVoucher
+                                      ? ` (${order.productVoucher.code})`
+                                      : ''}
+                                  </span>
+                                  <span>
+                                    -{order.productDiscount.toLocaleString('vi-VN')}₫
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex justify-between text-text-secondary">
                                 <span>Phí vận chuyển</span>
                                 <span>
-                                  {order.shippingFee === 0
+                                  {order.originalShippingFee === 0
                                     ? 'Miễn phí'
-                                    : `${order.shippingFee.toLocaleString('vi-VN')}₫`}
+                                    : `${order.originalShippingFee.toLocaleString('vi-VN')}₫`}
                                 </span>
                               </div>
+                              {order.shippingDiscount > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                  <span>
+                                    Giảm freeship
+                                    {order.shippingVoucher
+                                      ? ` (${order.shippingVoucher.code})`
+                                      : ''}
+                                  </span>
+                                  <span>
+                                    -{order.shippingDiscount.toLocaleString('vi-VN')}₫
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex justify-between font-bold text-text-primary">
                                 <span>Tổng cộng</span>
                                 <span className="text-brand">

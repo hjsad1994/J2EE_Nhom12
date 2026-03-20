@@ -34,8 +34,10 @@ import {
   Upload,
   Ban,
   ShieldOff,
+  TicketPercent,
 } from 'lucide-react';
 import ExcelImportModal from '@/components/admin/ExcelImportModal';
+import VoucherManagement from '@/components/admin/VoucherManagement';
 import { useNavigate } from 'react-router';
 import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
@@ -114,7 +116,13 @@ const emptyCategoryForm: CreateCategoryPayload = {
   icon: '',
 };
 
-type Tab = 'overview' | 'users' | 'products' | 'categories' | 'orders';
+type Tab =
+  | 'overview'
+  | 'users'
+  | 'products'
+  | 'categories'
+  | 'orders'
+  | 'vouchers';
 
 const NAV_ITEMS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
@@ -122,6 +130,11 @@ const NAV_ITEMS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'products', label: 'Sản phẩm', icon: Package },
   { key: 'categories', label: 'Danh mục', icon: Tag },
   { key: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
+];
+
+const DASHBOARD_NAV_ITEMS = [
+  ...NAV_ITEMS,
+  { key: 'vouchers' as const, label: 'Voucher', icon: TicketPercent },
 ];
 
 export function Component() {
@@ -705,7 +718,7 @@ export function Component() {
             </p>
           )}
           <ul className="space-y-1">
-            {NAV_ITEMS.map(({ key, label, icon: Icon }) => (
+            {DASHBOARD_NAV_ITEMS.map(({ key, label, icon: Icon }) => (
               <li key={key}>
                 <button
                   type="button"
@@ -778,10 +791,12 @@ export function Component() {
             </button>
             <div>
               <h1 className="text-base font-bold text-gray-800">
-                {NAV_ITEMS.find((n) => n.key === tab)?.label ?? 'Dashboard'}
+                {DASHBOARD_NAV_ITEMS.find((n) => n.key === tab)?.label ??
+                  'Dashboard'}
               </h1>
               <p className="text-xs text-gray-400">
-                Trang chủ / {NAV_ITEMS.find((n) => n.key === tab)?.label}
+                Trang chủ /{' '}
+                {DASHBOARD_NAV_ITEMS.find((n) => n.key === tab)?.label}
               </p>
             </div>
           </div>
@@ -1536,6 +1551,8 @@ export function Component() {
               )}
             </div>
           )}
+
+          {tab === 'vouchers' && <VoucherManagement />}
         </main>
       </div>
 

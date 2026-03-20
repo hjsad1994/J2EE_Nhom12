@@ -38,6 +38,10 @@ public class CreateOrderRequest {
 
   @NotBlank private String paymentMethod;
 
+  private String productVoucherCode;
+
+  private String shippingVoucherCode;
+
   @NotEmpty private List<OrderItemRequest> items;
 
   @Getter

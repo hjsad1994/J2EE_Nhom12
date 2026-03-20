@@ -25,6 +25,11 @@ export const ENDPOINTS = {
     STATUS: (id: string) => `/orders/${id}/status`,
     CANCEL: (id: string) => `/orders/${id}/cancel`,
   },
+  VOUCHERS: {
+    BASE: '/vouchers',
+    BY_ID: (id: string) => `/vouchers/${id}`,
+    VALIDATE: '/vouchers/validate',
+  },
   MOMO: {
     CREATE: (orderId: string) => `/momo/create?orderId=${orderId}`,
   },

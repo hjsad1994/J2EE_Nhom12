@@ -1,3 +1,5 @@
+import type { AppliedVoucher } from './voucher';
+
 export type OrderStatus =
   | 'PENDING'
   | 'CONFIRMED'
@@ -32,8 +34,14 @@ export interface Order {
   status: OrderStatus;
   items: OrderItem[];
   subtotal: number;
+  productDiscount: number;
+  shippingDiscount: number;
+  discountTotal: number;
+  originalShippingFee: number;
   shippingFee: number;
   total: number;
+  productVoucher?: AppliedVoucher;
+  shippingVoucher?: AppliedVoucher;
   createdAt: string;
   paymentStatus?: string;
   momoTransId?: string;
@@ -52,6 +60,8 @@ export interface CreateOrderPayload {
   note?: string;
   idempotencyKey?: string;
   paymentMethod: string;
+  productVoucherCode?: string;
+  shippingVoucherCode?: string;
   items: OrderItem[];
 }
 

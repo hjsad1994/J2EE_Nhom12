@@ -11,7 +11,7 @@ Muc tieu production:
 - Frontend: `https://veritashop.click`
 - API: `https://api.veritashop.click`
 - Server: `160.250.247.176`
-- Services: `frontend`, `backend`, `mongo`, `caddy`
+- Services: `frontend`, `backend`, `caddy`
 
 ## 1. Chuan bi DNS
 
@@ -104,6 +104,7 @@ nano .env.vps
 
 Ban phai thay cac gia tri nay:
 
+- `MONGODB_URI=mongodb+srv://...`
 - `JWT_SECRET=please_replace_with_a_long_random_secret_min_32_chars`
 - `GOOGLE_CLIENT_ID=your_google_client_id`
 - `GOOGLE_CLIENT_SECRET=your_google_client_secret`
@@ -144,10 +145,11 @@ docker compose --env-file .env.vps ps
 
 Ban phai thay 4 service:
 
-- `veritashop-mongo`
 - `veritashop-backend`
 - `veritashop-frontend`
 - `veritashop-caddy`
+
+Tong cong la 3 service.
 
 ## 8. Xem log neu co loi
 
@@ -229,7 +231,7 @@ docker compose --env-file .env.vps ps
 
 ## 12. Ghi chu quan trong
 
-- `mongo` dang luu du lieu trong volume Docker, khong mat khi restart container.
+- Production dang dung MongoDB Atlas qua `MONGODB_URI`, khong chay container MongoDB noi bo.
 - `caddy` tu cap va gia han SSL Let's Encrypt.
 - `caddy` proxy duoc ca WebSocket cho endpoint `/ws`.
 - Backend khong mo cong `8080` ra ngoai Internet.

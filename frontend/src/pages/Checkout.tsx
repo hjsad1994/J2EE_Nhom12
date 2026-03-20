@@ -4,7 +4,9 @@ import {
   CreditCard,
   Loader2,
   MapPin,
+  TicketPercent,
   Truck,
+  X,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useRef, useState } from 'react';
@@ -12,14 +14,16 @@ import { Link, useNavigate } from 'react-router';
 
 import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
+import type { ApiResponse } from '@/api/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
-import type { ApiResponse } from '@/api/types';
 import type { CreateOrderPayload, Order } from '@/types/order';
+import type { VoucherValidation } from '@/types/voucher';
 
 export const Component = Checkout;
 
 type PaymentMethod = 'COD' | 'MOMO';
+type VoucherInputType = 'product' | 'shipping';
 
 const inputClass =
   'w-full rounded-xl border border-border bg-surface-alt px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-colors';
@@ -39,6 +43,13 @@ function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
+  const [productVoucherCode, setProductVoucherCode] = useState('');
+  const [shippingVoucherCode, setShippingVoucherCode] = useState('');
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherMessage, setVoucherMessage] = useState('');
+  const [voucherSummary, setVoucherSummary] = useState<VoucherValidation | null>(
+    null,
+  );
 
   if (items.length === 0) {
     return (
@@ -56,8 +67,80 @@ function Checkout() {
     );
   }
 
-  const shippingFee = totalPrice >= 500000 ? 0 : 30000;
-  const total = totalPrice + shippingFee;
+  const orderItems = items.map(({ product, quantity }) => ({
+    productId: product.id,
+    productName: product.name,
+    productImage: product.image,
+    brand: product.brand,
+    color: product.selectedColor,
+    storage: product.selectedStorage,
+    price: product.price,
+    quantity,
+  }));
+
+  const defaultShippingFee = totalPrice >= 500000 ? 0 : 30000;
+  const pricing = voucherSummary ?? {
+    subtotal: totalPrice,
+    originalShippingFee: defaultShippingFee,
+    shippingFee: defaultShippingFee,
+    productDiscount: 0,
+    shippingDiscount: 0,
+    totalDiscount: 0,
+    total: totalPrice + defaultShippingFee,
+    productVoucher: null,
+    shippingVoucher: null,
+  };
+
+  const resetVoucherPreview = () => {
+    setVoucherSummary(null);
+    setVoucherMessage('');
+  };
+
+  const applyVouchers = async () => {
+    const normalizedProductCode = productVoucherCode.trim();
+    const normalizedShippingCode = shippingVoucherCode.trim();
+
+    if (!normalizedProductCode && !normalizedShippingCode) {
+      resetVoucherPreview();
+      return;
+    }
+
+    setVoucherLoading(true);
+    setError('');
+    setVoucherMessage('');
+
+    try {
+      const res = await apiClient.post<ApiResponse<VoucherValidation>>(
+        ENDPOINTS.VOUCHERS.VALIDATE,
+        {
+          items: orderItems,
+          productVoucherCode: normalizedProductCode || undefined,
+          shippingVoucherCode: normalizedShippingCode || undefined,
+        },
+      );
+      setVoucherSummary(res.data.data);
+      setVoucherMessage('Áp dụng voucher thành công.');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setVoucherSummary(null);
+      setVoucherMessage('');
+      setError(
+        axiosErr.response?.data?.message ??
+          'Không thể áp dụng voucher. Vui lòng thử lại.',
+      );
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
+  const clearVoucher = (type: VoucherInputType) => {
+    if (type === 'product') {
+      setProductVoucherCode('');
+    } else {
+      setShippingVoucherCode('');
+    }
+    resetVoucherPreview();
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,16 +160,9 @@ function Checkout() {
       note: (fd.get('note') as string) || undefined,
       idempotencyKey: idempotencyKeyRef.current,
       paymentMethod,
-      items: items.map(({ product, quantity }) => ({
-        productId: product.id,
-        productName: product.name,
-        productImage: product.image,
-        brand: product.brand,
-        color: product.selectedColor,
-        storage: product.selectedStorage,
-        price: product.price,
-        quantity,
-      })),
+      productVoucherCode: productVoucherCode.trim() || undefined,
+      shippingVoucherCode: shippingVoucherCode.trim() || undefined,
+      items: orderItems,
     };
 
     try {
@@ -97,7 +173,6 @@ function Checkout() {
       const orderId = res.data.data.id;
 
       if (paymentMethod === 'MOMO') {
-        // Get MoMo payment URL then redirect browser to it
         const momoRes = await apiClient.post<ApiResponse<{ payUrl: string }>>(
           ENDPOINTS.MOMO.CREATE(orderId),
         );
@@ -119,9 +194,51 @@ function Checkout() {
     }
   };
 
+  const renderVoucherInput = (
+    type: VoucherInputType,
+    label: string,
+    placeholder: string,
+    value: string,
+    onChange: (nextValue: string) => void,
+    appliedCode?: string | null,
+  ) => (
+    <div className="space-y-2 rounded-xl border border-border bg-surface-alt p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-text-primary">{label}</p>
+          <p className="text-xs text-text-muted">{placeholder}</p>
+        </div>
+        {appliedCode && (
+          <button
+            type="button"
+            onClick={() => clearVoucher(type)}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
+          >
+            <X className="h-3.5 w-3.5" />
+            Gỡ mã
+          </button>
+        )}
+      </div>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value.toUpperCase());
+          resetVoucherPreview();
+        }}
+        placeholder={type === 'product' ? 'VD: SALE10' : 'VD: SHIPFREE'}
+        className={inputClass}
+      />
+      {appliedCode && (
+        <p className="text-xs font-medium text-green-600">
+          Đang áp dụng: {appliedCode}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <section className="mx-auto max-w-7xl px-6 py-24 lg:py-32">
-      {/* Back link & heading */}
       <div className="mb-10">
         <Link
           to="/cart"
@@ -136,7 +253,6 @@ function Checkout() {
       </div>
 
       <div className="grid gap-12 lg:grid-cols-12">
-        {/* ── Left Column: Form ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -148,7 +264,6 @@ function Checkout() {
             onSubmit={handleSubmit}
             className="space-y-8"
           >
-            {/* Contact Info */}
             <section className="space-y-4">
               <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-text-primary">
                 <CheckCircle2 className="h-5 w-5 text-brand-accent" />
@@ -207,7 +322,6 @@ function Checkout() {
               </div>
             </section>
 
-            {/* Shipping Address */}
             <section className="space-y-4">
               <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-text-primary">
                 <MapPin className="h-5 w-5 text-brand-accent" />
@@ -283,14 +397,55 @@ function Checkout() {
               </div>
             </section>
 
-            {/* Payment Method */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-2">
+                <TicketPercent className="h-5 w-5 text-brand-accent" />
+                <h2 className="font-display text-xl font-semibold text-text-primary">
+                  Voucher
+                </h2>
+              </div>
+              <div className="space-y-4">
+                {renderVoucherInput(
+                  'product',
+                  'Voucher giảm giá sản phẩm',
+                  'Áp cho giá trị sản phẩm trong đơn hàng.',
+                  productVoucherCode,
+                  setProductVoucherCode,
+                  voucherSummary?.productVoucher?.code,
+                )}
+                {renderVoucherInput(
+                  'shipping',
+                  'Voucher freeship',
+                  'Áp cho phí vận chuyển của đơn hàng.',
+                  shippingVoucherCode,
+                  setShippingVoucherCode,
+                  voucherSummary?.shippingVoucher?.code,
+                )}
+                <button
+                  type="button"
+                  onClick={applyVouchers}
+                  disabled={voucherLoading}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-brand px-4 py-3 text-sm font-semibold text-brand transition hover:bg-brand-subtle disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {voucherLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  Kiểm tra voucher
+                </button>
+                {voucherMessage && (
+                  <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+                    {voucherMessage}
+                  </p>
+                )}
+              </div>
+            </section>
+
             <section className="space-y-4">
               <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-text-primary">
                 <CreditCard className="h-5 w-5 text-brand-accent" />
                 Phương thức thanh toán
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                {/* COD */}
                 <label
                   className={`relative flex cursor-pointer flex-col gap-3 rounded-xl border p-4 transition-all ${
                     paymentMethod === 'COD'
@@ -319,7 +474,6 @@ function Checkout() {
                   </p>
                 </label>
 
-                {/* MoMo */}
                 <label
                   className={`relative flex cursor-pointer flex-col gap-3 rounded-xl border p-4 transition-all ${
                     paymentMethod === 'MOMO'
@@ -350,14 +504,12 @@ function Checkout() {
               </div>
             </section>
 
-            {/* Note */}
             <section className="space-y-4">
               <label
                 htmlFor="note"
                 className="block text-sm font-medium text-text-primary"
               >
-                Ghi chú đơn hàng{' '}
-                <span className="text-text-muted">(tùy chọn)</span>
+                Ghi chú đơn hàng <span className="text-text-muted">(tùy chọn)</span>
               </label>
               <textarea
                 id="note"
@@ -376,7 +528,6 @@ function Checkout() {
           </form>
         </motion.div>
 
-        {/* ── Right Column: Order Summary ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -388,7 +539,6 @@ function Checkout() {
               Đơn hàng của bạn
             </h3>
 
-            {/* Product list */}
             <div className="max-h-72 space-y-4 overflow-y-auto pr-1">
               {items.map(({ product, quantity }) => (
                 <div
@@ -413,9 +563,7 @@ function Checkout() {
                           .join(' · ')}
                       </p>
                     )}
-                    <p className="text-xs text-text-muted">
-                      Số lượng: {quantity}
-                    </p>
+                    <p className="text-xs text-text-muted">Số lượng: {quantity}</p>
                     <p className="text-sm font-semibold text-brand">
                       {(product.price * quantity).toLocaleString('vi-VN')}₫
                     </p>
@@ -424,23 +572,44 @@ function Checkout() {
               ))}
             </div>
 
-            {/* Totals */}
             <div className="space-y-3 border-t border-border pt-4">
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Tạm tính</span>
                 <span className="font-medium text-text-primary">
-                  {totalPrice.toLocaleString('vi-VN')}₫
+                  {pricing.subtotal.toLocaleString('vi-VN')}₫
                 </span>
               </div>
+              {pricing.productDiscount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>
+                    Giảm sản phẩm
+                    {pricing.productVoucher
+                      ? ` (${pricing.productVoucher.code})`
+                      : ''}
+                  </span>
+                  <span>-{pricing.productDiscount.toLocaleString('vi-VN')}₫</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Phí vận chuyển</span>
                 <span className="font-medium text-text-primary">
-                  {shippingFee === 0
+                  {pricing.originalShippingFee === 0
                     ? 'Miễn phí'
-                    : `${shippingFee.toLocaleString('vi-VN')}₫`}
+                    : `${pricing.originalShippingFee.toLocaleString('vi-VN')}₫`}
                 </span>
               </div>
-              {shippingFee > 0 && (
+              {pricing.shippingDiscount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>
+                    Giảm freeship
+                    {pricing.shippingVoucher
+                      ? ` (${pricing.shippingVoucher.code})`
+                      : ''}
+                  </span>
+                  <span>-{pricing.shippingDiscount.toLocaleString('vi-VN')}₫</span>
+                </div>
+              )}
+              {pricing.originalShippingFee > 0 && pricing.shippingDiscount === 0 && (
                 <p className="text-xs text-text-muted">
                   Miễn phí vận chuyển cho đơn hàng từ 500.000₫
                 </p>
@@ -450,12 +619,11 @@ function Checkout() {
                   Tổng cộng
                 </span>
                 <span className="font-display text-xl font-bold text-brand">
-                  {total.toLocaleString('vi-VN')}₫
+                  {pricing.total.toLocaleString('vi-VN')}₫
                 </span>
               </div>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               form="checkout-form"
@@ -473,8 +641,8 @@ function Checkout() {
             </button>
 
             <p className="text-center text-xs text-text-muted">
-              Bằng việc đặt hàng, bạn đồng ý với điều khoản dịch vụ và chính
-              sách bảo mật của chúng tôi.
+              Bằng việc đặt hàng, bạn đồng ý với điều khoản dịch vụ và chính sách
+              bảo mật của chúng tôi.
             </p>
           </div>
         </motion.div>
