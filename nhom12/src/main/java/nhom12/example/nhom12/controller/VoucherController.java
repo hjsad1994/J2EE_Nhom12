@@ -36,6 +36,16 @@ public class VoucherController {
         ApiResponse.success(voucherService.getAllVouchers(), "Vouchers retrieved successfully"));
   }
 
+  @PostMapping("/available")
+  @PreAuthorize("hasAnyRole('USER','ADMIN')")
+  public ResponseEntity<ApiResponse<List<VoucherResponse>>> getAvailableVouchers(
+      @Valid @RequestBody ValidateVoucherRequest request) {
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            voucherService.getAvailableVouchers(request.getItems()),
+            "Available vouchers retrieved successfully"));
+  }
+
   @PostMapping
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<VoucherResponse>> createVoucher(

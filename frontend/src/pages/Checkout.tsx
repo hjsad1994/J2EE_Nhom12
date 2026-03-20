@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   CreditCard,
   Loader2,
   MapPin,
@@ -9,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import apiClient from '@/api/client';
@@ -18,7 +19,7 @@ import type { ApiResponse } from '@/api/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
 import type { CreateOrderPayload, Order } from '@/types/order';
-import type { VoucherValidation } from '@/types/voucher';
+import type { Voucher, VoucherValidation } from '@/types/voucher';
 
 export const Component = Checkout;
 
@@ -46,10 +47,48 @@ function Checkout() {
   const [productVoucherCode, setProductVoucherCode] = useState('');
   const [shippingVoucherCode, setShippingVoucherCode] = useState('');
   const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherOptionsLoading, setVoucherOptionsLoading] = useState(false);
   const [voucherMessage, setVoucherMessage] = useState('');
   const [voucherSummary, setVoucherSummary] = useState<VoucherValidation | null>(
     null,
   );
+  const [availableVouchers, setAvailableVouchers] = useState<Voucher[]>([]);
+
+  useEffect(() => {
+    if (items.length === 0) {
+      setAvailableVouchers([]);
+      setVoucherOptionsLoading(false);
+      return;
+    }
+
+    const loadAvailableVouchers = async () => {
+      setVoucherOptionsLoading(true);
+      try {
+        const res = await apiClient.post<ApiResponse<Voucher[]>>(
+          ENDPOINTS.VOUCHERS.AVAILABLE,
+          {
+            items: items.map(({ product, quantity }) => ({
+              productId: product.id,
+              productName: product.name,
+              productImage: product.image,
+              brand: product.brand,
+              color: product.selectedColor,
+              storage: product.selectedStorage,
+              price: product.price,
+              quantity,
+            })),
+          },
+        );
+        setAvailableVouchers(res.data.data);
+      } catch {
+        setAvailableVouchers([]);
+      } finally {
+        setVoucherOptionsLoading(false);
+      }
+    };
+
+    void loadAvailableVouchers();
+  }, [items, totalPrice]);
 
   if (items.length === 0) {
     return (
@@ -79,6 +118,12 @@ function Checkout() {
   }));
 
   const defaultShippingFee = totalPrice >= 500000 ? 0 : 30000;
+  const productVoucherOptions = availableVouchers.filter(
+    (voucher) => voucher.type === 'PRODUCT',
+  );
+  const shippingVoucherOptions = availableVouchers.filter(
+    (voucher) => voucher.type === 'SHIPPING',
+  );
   const pricing = voucherSummary ?? {
     subtotal: totalPrice,
     originalShippingFee: defaultShippingFee,
@@ -200,6 +245,7 @@ function Checkout() {
     placeholder: string,
     value: string,
     onChange: (nextValue: string) => void,
+    options: Voucher[],
     appliedCode?: string | null,
   ) => (
     <div className="space-y-2 rounded-xl border border-border bg-surface-alt p-4">
@@ -229,6 +275,31 @@ function Checkout() {
         placeholder={type === 'product' ? 'VD: SALE10' : 'VD: SHIPFREE'}
         className={inputClass}
       />
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            resetVoucherPreview();
+          }}
+          className={`${inputClass} appearance-none pr-10`}
+        >
+          <option value="">
+            {voucherOptionsLoading
+              ? 'Dang tai voucher...'
+              : options.length > 0
+                ? 'Chon voucher phu hop'
+                : 'Khong co voucher kha dung'}
+          </option>
+          {options.map((voucher) => (
+            <option key={voucher.id} value={voucher.code}>
+              {voucher.code}
+              {voucher.description ? ` - ${voucher.description}` : ''}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-text-muted" />
+      </div>
       {appliedCode && (
         <p className="text-xs font-medium text-green-600">
           Đang áp dụng: {appliedCode}
@@ -411,6 +482,7 @@ function Checkout() {
                   'Áp cho giá trị sản phẩm trong đơn hàng.',
                   productVoucherCode,
                   setProductVoucherCode,
+                  productVoucherOptions,
                   voucherSummary?.productVoucher?.code,
                 )}
                 {renderVoucherInput(
@@ -419,6 +491,7 @@ function Checkout() {
                   'Áp cho phí vận chuyển của đơn hàng.',
                   shippingVoucherCode,
                   setShippingVoucherCode,
+                  shippingVoucherOptions,
                   voucherSummary?.shippingVoucher?.code,
                 )}
                 <button

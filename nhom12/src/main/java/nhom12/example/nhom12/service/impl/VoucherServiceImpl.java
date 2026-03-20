@@ -78,6 +78,21 @@ public class VoucherServiceImpl implements VoucherService {
   }
 
   @Override
+  public List<VoucherResponse> getAvailableVouchers(List<CreateOrderRequest.OrderItemRequest> items) {
+    double subtotal = calculateSubtotal(items);
+    double shippingFee = calculateShippingFee(subtotal);
+
+    return voucherRepository.findAllSorted().stream()
+        .map(
+            voucher -> {
+              double baseAmount = voucher.getType() == VoucherType.SHIPPING ? shippingFee : subtotal;
+              return toResponse(voucher, isVoucherUsable(voucher, baseAmount));
+            })
+        .filter(VoucherResponse::isUsable)
+        .toList();
+  }
+
+  @Override
   public VoucherValidationResponse validateOrderVouchers(
       List<CreateOrderRequest.OrderItemRequest> items, String productVoucherCode, String shippingVoucherCode) {
     double subtotal = calculateSubtotal(items);

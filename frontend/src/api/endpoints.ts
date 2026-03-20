@@ -28,6 +28,7 @@ export const ENDPOINTS = {
   VOUCHERS: {
     BASE: '/vouchers',
     BY_ID: (id: string) => `/vouchers/${id}`,
+    AVAILABLE: '/vouchers/available',
     VALIDATE: '/vouchers/validate',
   },
   MOMO: {

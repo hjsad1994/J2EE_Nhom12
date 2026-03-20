@@ -18,6 +18,8 @@ public interface VoucherService {
 
   List<VoucherResponse> getAllVouchers();
 
+  List<VoucherResponse> getAvailableVouchers(List<CreateOrderRequest.OrderItemRequest> items);
+
   VoucherValidationResponse validateOrderVouchers(
       List<CreateOrderRequest.OrderItemRequest> items, String productVoucherCode, String shippingVoucherCode);
 
