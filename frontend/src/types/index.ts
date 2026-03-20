@@ -4,3 +4,4 @@
  */
 export * from './common';
 export * from './voucher';
+export * from './chat';

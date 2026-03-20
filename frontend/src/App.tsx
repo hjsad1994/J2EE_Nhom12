@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router';
+import ChatWidget from '@/components/chat/ChatWidget';
 import Footer from '@/components/layout/Footer';
 import Navbar from '@/components/layout/Navbar';
 import ScrollToTop from '@/components/ScrollToTop';
@@ -16,6 +17,7 @@ export default function App() {
         <Outlet />
       </main>
       <Footer />
+      <ChatWidget />
     </>
   );
 }

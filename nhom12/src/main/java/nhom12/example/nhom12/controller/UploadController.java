@@ -26,4 +26,11 @@ public class UploadController {
     String url = cloudinaryService.upload(file, folder);
     return ResponseEntity.ok(ApiResponse.success(url, "Image uploaded successfully"));
   }
+
+  @PostMapping("/chat-image")
+  @PreAuthorize("hasAnyRole('USER','ADMIN')")
+  public ResponseEntity<ApiResponse<String>> uploadChatImage(@RequestParam("file") MultipartFile file) {
+    String url = cloudinaryService.upload(file, "chat");
+    return ResponseEntity.ok(ApiResponse.success(url, "Chat image uploaded successfully"));
+  }
 }

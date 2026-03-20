@@ -1,4 +1,5 @@
 import type { Product } from '@/types/product';
+import productPlaceholder from '@/assets/images/product-placeholder.svg';
 
 export const featuredProducts: Product[] = [
   {
@@ -7,8 +8,7 @@ export const featuredProducts: Product[] = [
     brand: 'Apple',
     price: 34990000,
     originalPrice: 37990000,
-    image:
-      'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-pro-hero-desert-702702_AV1?wid=940&hei=1112&fmt=png-alpha',
+    image: productPlaceholder,
     rating: 4.9,
     stock: 24,
     badge: 'Hot',
@@ -20,8 +20,7 @@ export const featuredProducts: Product[] = [
     brand: 'Samsung',
     price: 33990000,
     originalPrice: 36990000,
-    image:
-      'https://images.samsung.com/is/image/samsung/p6pim/vn/2501/gallery/vn-galaxy-s25-ultra-coldsnap-titanium-471198-sm-s938blbdxxv-544691988?$650_519_PNG$',
+    image: productPlaceholder,
     rating: 4.8,
     stock: 18,
     badge: 'New',
@@ -44,8 +43,7 @@ export const featuredProducts: Product[] = [
     brand: 'Xiaomi',
     price: 23990000,
     originalPrice: 25990000,
-    image:
-      'https://i02.appmifile.com/images/2025/03/14/c67e6fac-f2ef-4406-aa96-b914449751f0.png',
+    image: productPlaceholder,
     rating: 4.6,
     stock: 15,
     badge: 'Sale',
@@ -81,8 +79,7 @@ export const featuredProducts: Product[] = [
     brand: 'Apple',
     price: 24990000,
     originalPrice: 26990000,
-    image:
-      'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-hero-geo-702702_AV1?wid=940&hei=1112&fmt=png-alpha',
+    image: productPlaceholder,
     rating: 4.7,
     stock: 27,
     specs: '128GB · A18 chip · Dynamic Island',
@@ -93,8 +90,7 @@ export const featuredProducts: Product[] = [
     brand: 'Samsung',
     price: 10990000,
     originalPrice: 12990000,
-    image:
-      'https://images.samsung.com/is/image/samsung/p6pim/vn/2501/gallery/vn-galaxy-a56-5g-sm-a566-sm-a566elbdxxv-544048507?$650_519_PNG$',
+    image: productPlaceholder,
     rating: 4.3,
     stock: 36,
     badge: 'Best Seller',

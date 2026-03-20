@@ -35,7 +35,9 @@ import {
   Ban,
   ShieldOff,
   TicketPercent,
+  MessageCircle,
 } from 'lucide-react';
+import AdminChatPanel from '@/components/admin/AdminChatPanel';
 import ExcelImportModal from '@/components/admin/ExcelImportModal';
 import VoucherManagement from '@/components/admin/VoucherManagement';
 import { useNavigate } from 'react-router';
@@ -52,6 +54,7 @@ import type {
 import type { Order, OrderStatus } from '@/types/order';
 import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from '@/types/order';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useChatStore } from '@/store/useChatStore';
 import { useToastStore } from '@/store/useToastStore';
 
 interface UserItem {
@@ -122,6 +125,7 @@ type Tab =
   | 'products'
   | 'categories'
   | 'orders'
+  | 'chat'
   | 'vouchers';
 
 const NAV_ITEMS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
@@ -134,6 +138,7 @@ const NAV_ITEMS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
 
 const DASHBOARD_NAV_ITEMS = [
   ...NAV_ITEMS,
+  { key: 'chat' as const, label: 'Tin nhắn', icon: MessageCircle },
   { key: 'vouchers' as const, label: 'Voucher', icon: TicketPercent },
 ];
 
@@ -188,6 +193,7 @@ export function Component() {
   const [loadingOrders, setLoadingOrders] = useState(true);
 
   const { user, logout } = useAuthStore();
+  const adminChatUnreadCount = useChatStore((s) => s.adminUnreadCount);
   const navigate = useNavigate();
   const addToast = useToastStore((s) => s.addToast);
 
@@ -731,6 +737,19 @@ export function Component() {
                 >
                   <Icon className="h-5 w-5 shrink-0" />
                   {sidebarOpen && <span>{label}</span>}
+                  {sidebarOpen &&
+                    key === 'chat' &&
+                    adminChatUnreadCount > 0 && (
+                      <span
+                        className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          tab === key
+                            ? 'bg-white/20 text-white'
+                            : 'bg-red-500 text-white'
+                        }`}
+                      >
+                        {adminChatUnreadCount > 99 ? '99+' : adminChatUnreadCount}
+                      </span>
+                    )}
                   {sidebarOpen && tab === key && (
                     <ChevronRight className="ml-auto h-4 w-4" />
                   )}
@@ -1553,6 +1572,8 @@ export function Component() {
           )}
 
           {tab === 'vouchers' && <VoucherManagement />}
+
+          {tab === 'chat' && <AdminChatPanel />}
         </main>
       </div>
 

@@ -1,0 +1,17 @@
+<svg width="940" height="1112" viewBox="0 0 940 1112" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="940" height="1112" rx="64" fill="#F5F1E8"/>
+  <rect x="105" y="118" width="730" height="876" rx="56" fill="#FFFFFF"/>
+  <rect x="149" y="176" width="642" height="740" rx="44" fill="#E8E1D4"/>
+  <rect x="396" y="145" width="148" height="18" rx="9" fill="#C7B89A"/>
+  <circle cx="228" cy="255" r="38" fill="#C7B89A"/>
+  <circle cx="228" cy="255" r="18" fill="#F5F1E8"/>
+  <rect x="222" y="457" width="496" height="32" rx="16" fill="#B8A78A"/>
+  <rect x="278" y="527" width="384" height="24" rx="12" fill="#C7B89A"/>
+  <rect x="329" y="773" width="282" height="70" rx="35" fill="#2E2A24"/>
+  <text x="470" y="646" text-anchor="middle" fill="#6A5D49" font-family="Arial, sans-serif" font-size="54" font-weight="700">
+    Product Image
+  </text>
+  <text x="470" y="703" text-anchor="middle" fill="#8B7D67" font-family="Arial, sans-serif" font-size="28">
+    Placeholder
+  </text>
+</svg>

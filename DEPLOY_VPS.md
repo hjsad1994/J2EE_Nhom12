@@ -86,6 +86,7 @@ cd /opt/veritashop
 
 Repo da co san file:
 
+- `.env.example`
 - `.env.vps`
 - `.env.vps.example`
 
@@ -150,6 +151,8 @@ Ban phai thay 4 service:
 - `veritashop-caddy`
 
 Tong cong la 3 service.
+
+Neu muon test local bang Docker truoc khi push, xem them `DOCKER_LOCAL.md`.
 
 ## 8. Xem log neu co loi
 

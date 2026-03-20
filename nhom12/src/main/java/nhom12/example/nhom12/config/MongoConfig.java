@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableMongoAuditing
@@ -23,7 +24,8 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
 
   @Override
   protected String getDatabaseName() {
-    return "nhom12";
+    String database = new ConnectionString(mongoUri).getDatabase();
+    return StringUtils.hasText(database) ? database : "nhom12";
   }
 
   @Override

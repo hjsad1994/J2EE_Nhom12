@@ -50,6 +50,15 @@ export const ENDPOINTS = {
   },
   UPLOAD: {
     IMAGE: '/upload/image',
+    CHAT_IMAGE: '/upload/chat-image',
+  },
+  CHAT: {
+    MY_CONVERSATION: '/chat/my/conversation',
+    MY_MESSAGES: '/chat/my/messages',
+    ADMIN_CONVERSATIONS: '/chat/admin/conversations',
+    ADMIN_MESSAGES: (conversationId: string) =>
+      `/chat/admin/conversations/${conversationId}/messages`,
+    ADMIN_SEND: '/chat/admin/messages',
   },
   USERS: {
     ME: '/users/me',

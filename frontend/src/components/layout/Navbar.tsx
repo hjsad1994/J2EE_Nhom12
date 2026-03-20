@@ -15,6 +15,7 @@ import { Link, useNavigate } from 'react-router';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useChatStore } from '@/store/useChatStore';
 
 const navLinks = [
   { label: 'Trang chủ', href: '/' },
@@ -27,6 +28,7 @@ export default function Navbar() {
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const cartCount = useCartStore((s) => s.totalItems());
   const { isLoggedIn, isAdmin, logout } = useAuthStore();
+  const chatUnreadCount = useChatStore((s) => s.userUnreadCount);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -125,10 +127,20 @@ export default function Navbar() {
               )}
               <Link
                 to="/profile"
-                className="rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
+                className="relative rounded-full p-2 text-text-secondary transition-colors hover:bg-surface-alt hover:text-brand"
                 title="Tài khoản"
               >
                 <User className="h-5 w-5" />
+                {!isAdmin && chatUnreadCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface"
+                  >
+                    {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+                  </motion.span>
+                )}
               </Link>
               <button
                 type="button"
