@@ -22,6 +22,7 @@ import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.service.EmailService;
 import nhom12.example.nhom12.service.OrderService;
 import nhom12.example.nhom12.service.VoucherService;
+import nhom12.example.nhom12.util.PriceNormalizer;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
@@ -74,6 +75,7 @@ public class OrderServiceImpl implements OrderService {
                 .findById(itemReq.getProductId())
                 .orElseThrow(
                     () -> new ResourceNotFoundException("Product", "id", itemReq.getProductId()));
+        PriceNormalizer.normalizeProduct(product);
         ProductVariant variant = findVariant(product, itemReq.getColor(), itemReq.getStorage());
         int availableStock = variant != null ? variant.getStock() : product.getStock();
 

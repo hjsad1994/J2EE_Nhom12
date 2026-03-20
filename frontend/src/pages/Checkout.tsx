@@ -16,6 +16,7 @@ import { Link, useNavigate } from 'react-router';
 import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
 import type { ApiResponse } from '@/api/types';
+import { formatCurrencyVnd, normalizeVndAmount } from '@/lib/currency';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
 import type { CreateOrderPayload, Order } from '@/types/order';
@@ -74,7 +75,7 @@ function Checkout() {
               brand: product.brand,
               color: product.selectedColor,
               storage: product.selectedStorage,
-              price: product.price,
+              price: normalizeVndAmount(product.price),
               quantity,
             })),
           },
@@ -113,7 +114,7 @@ function Checkout() {
     brand: product.brand,
     color: product.selectedColor,
     storage: product.selectedStorage,
-    price: product.price,
+    price: normalizeVndAmount(product.price),
     quantity,
   }));
 
@@ -307,7 +308,7 @@ function Checkout() {
               {voucher.code}
               {voucher.description ? ` - ${voucher.description}` : ''}
               {voucher.estimatedDiscountAmount != null
-                ? ` - Giam du kien ${voucher.estimatedDiscountAmount.toLocaleString('vi-VN')}₫`
+                ? ` - Giam du kien ${formatCurrencyVnd(voucher.estimatedDiscountAmount)}`
                 : ''}
               {!voucher.usable && voucher.unusableReason
                 ? ` - ${voucher.unusableReason}`
@@ -332,7 +333,7 @@ function Checkout() {
           {selectedVoucher.estimatedDiscountAmount != null && (
             <p className="mt-1">
               Giam du kien:{' '}
-              {selectedVoucher.estimatedDiscountAmount.toLocaleString('vi-VN')}₫
+              {formatCurrencyVnd(selectedVoucher.estimatedDiscountAmount)}
             </p>
           )}
           {!selectedVoucher.usable && selectedVoucher.unusableReason && (
@@ -680,7 +681,7 @@ function Checkout() {
                     )}
                     <p className="text-xs text-text-muted">Số lượng: {quantity}</p>
                     <p className="text-sm font-semibold text-brand">
-                      {(product.price * quantity).toLocaleString('vi-VN')}₫
+                      {formatCurrencyVnd(product.price * quantity)}
                     </p>
                   </div>
                 </div>
@@ -691,7 +692,7 @@ function Checkout() {
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Tạm tính</span>
                 <span className="font-medium text-text-primary">
-                  {pricing.subtotal.toLocaleString('vi-VN')}₫
+                  {formatCurrencyVnd(pricing.subtotal)}
                 </span>
               </div>
               {pricing.productDiscount > 0 && (
@@ -702,7 +703,7 @@ function Checkout() {
                       ? ` (${pricing.productVoucher.code})`
                       : ''}
                   </span>
-                  <span>-{pricing.productDiscount.toLocaleString('vi-VN')}₫</span>
+                  <span>-{formatCurrencyVnd(pricing.productDiscount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm">
@@ -710,7 +711,7 @@ function Checkout() {
                 <span className="font-medium text-text-primary">
                   {pricing.originalShippingFee === 0
                     ? 'Miễn phí'
-                    : `${pricing.originalShippingFee.toLocaleString('vi-VN')}₫`}
+                    : formatCurrencyVnd(pricing.originalShippingFee)}
                 </span>
               </div>
               {pricing.shippingDiscount > 0 && (
@@ -721,7 +722,7 @@ function Checkout() {
                       ? ` (${pricing.shippingVoucher.code})`
                       : ''}
                   </span>
-                  <span>-{pricing.shippingDiscount.toLocaleString('vi-VN')}₫</span>
+                  <span>-{formatCurrencyVnd(pricing.shippingDiscount)}</span>
                 </div>
               )}
               {pricing.originalShippingFee > 0 && pricing.shippingDiscount === 0 && (
@@ -734,7 +735,7 @@ function Checkout() {
                   Tổng cộng
                 </span>
                 <span className="font-display text-xl font-bold text-brand">
-                  {pricing.total.toLocaleString('vi-VN')}₫
+                  {formatCurrencyVnd(pricing.total)}
                 </span>
               </div>
             </div>

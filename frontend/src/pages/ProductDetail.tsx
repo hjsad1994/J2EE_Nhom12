@@ -21,6 +21,7 @@ import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
 import type { ApiResponse, PaginatedResponse } from '@/api/types';
 import ProductCard from '@/components/ui/ProductCard';
+import { formatCurrencyVnd, normalizeVndAmount } from '@/lib/currency';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
@@ -385,7 +386,7 @@ export function Component() {
 
             <div className="mt-6 flex items-end gap-3">
               <span className="font-display text-4xl font-bold text-brand">
-                {effectivePrice.toLocaleString('vi-VN')}đ
+                {formatCurrencyVnd(effectivePrice)}
               </span>
             </div>
 
@@ -486,7 +487,7 @@ export function Component() {
                         addToCart({
                           ...product,
                           image: displayImage,
-                          price: effectivePrice,
+                          price: normalizeVndAmount(effectivePrice),
                           stock: effectiveStock,
                           selectedColor,
                           selectedStorage,
@@ -510,7 +511,7 @@ export function Component() {
                       addToCart({
                         ...product,
                         image: displayImage,
-                        price: effectivePrice,
+                        price: normalizeVndAmount(effectivePrice),
                         stock: effectiveStock,
                         selectedColor,
                         selectedStorage,

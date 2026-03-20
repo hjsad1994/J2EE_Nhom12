@@ -17,6 +17,7 @@ import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
 import type { ApiResponse } from '@/api/types';
 import CancelOrderModal from '@/components/ui/CancelOrderModal';
+import { formatCurrencyVnd } from '@/lib/currency';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToastStore } from '@/store/useToastStore';
 import type { Order } from '@/types/order';
@@ -457,7 +458,7 @@ function Profile() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="font-display text-sm font-bold text-brand">
-                          {order.total.toLocaleString('vi-VN')}₫
+                          {formatCurrencyVnd(order.total)}
                         </span>
                         {expandedId === order.id ? (
                           <ChevronUp className="h-4 w-4 shrink-0 text-text-muted" />
@@ -582,10 +583,7 @@ function Profile() {
                                     </p>
                                   </div>
                                   <span className="shrink-0 text-sm font-semibold text-text-primary">
-                                    {(
-                                      item.price * item.quantity
-                                    ).toLocaleString('vi-VN')}
-                                    ₫
+                                    {formatCurrencyVnd(item.price * item.quantity)}
                                   </span>
                                 </div>
                               ))}
@@ -596,7 +594,7 @@ function Profile() {
                               <div className="flex justify-between text-text-secondary">
                                 <span>Tạm tính</span>
                                 <span>
-                                  {order.subtotal.toLocaleString('vi-VN')}₫
+                                  {formatCurrencyVnd(order.subtotal)}
                                 </span>
                               </div>
                               {order.productDiscount > 0 && (
@@ -608,7 +606,7 @@ function Profile() {
                                       : ''}
                                   </span>
                                   <span>
-                                    -{order.productDiscount.toLocaleString('vi-VN')}₫
+                                    -{formatCurrencyVnd(order.productDiscount)}
                                   </span>
                                 </div>
                               )}
@@ -617,7 +615,7 @@ function Profile() {
                                 <span>
                                   {order.originalShippingFee === 0
                                     ? 'Miễn phí'
-                                    : `${order.originalShippingFee.toLocaleString('vi-VN')}₫`}
+                                    : formatCurrencyVnd(order.originalShippingFee)}
                                 </span>
                               </div>
                               {order.shippingDiscount > 0 && (
@@ -629,14 +627,14 @@ function Profile() {
                                       : ''}
                                   </span>
                                   <span>
-                                    -{order.shippingDiscount.toLocaleString('vi-VN')}₫
+                                    -{formatCurrencyVnd(order.shippingDiscount)}
                                   </span>
                                 </div>
                               )}
                               <div className="flex justify-between font-bold text-text-primary">
                                 <span>Tổng cộng</span>
                                 <span className="text-brand">
-                                  {order.total.toLocaleString('vi-VN')}₫
+                                  {formatCurrencyVnd(order.total)}
                                 </span>
                               </div>
                             </div>

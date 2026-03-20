@@ -22,6 +22,7 @@ import nhom12.example.nhom12.model.enums.VoucherType;
 import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.repository.VoucherRepository;
 import nhom12.example.nhom12.service.VoucherService;
+import nhom12.example.nhom12.util.PriceNormalizer;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.BasicQuery;
@@ -170,6 +171,7 @@ public class VoucherServiceImpl implements VoucherService {
         productRepository
             .findById(item.getProductId())
             .orElseThrow(() -> new ResourceNotFoundException("Product", "id", item.getProductId()));
+    PriceNormalizer.normalizeProduct(product);
     ProductVariant variant = findVariant(product, item.getColor(), item.getStorage());
     double unitPrice = variant != null ? variant.getPrice() : product.getPrice();
     return unitPrice * item.getQuantity();

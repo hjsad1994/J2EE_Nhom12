@@ -10,6 +10,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react';
 import { Link } from 'react-router';
 
+import { formatCurrencyVnd } from '@/lib/currency';
 import { MAX_QUANTITY, useCartStore } from '@/store/useCartStore';
 
 export const Component = Cart;
@@ -207,11 +208,11 @@ function Cart() {
                       {/* Price */}
                       <div className="text-right">
                         <span className="font-display text-base font-bold text-brand sm:text-lg">
-                          {(product.price * quantity).toLocaleString('vi-VN')}₫
+                          {formatCurrencyVnd(product.price * quantity)}
                         </span>
                         {quantity > 1 && (
                           <p className="text-xs text-text-muted">
-                            {product.price.toLocaleString('vi-VN')}₫ / sản phẩm
+                            {formatCurrencyVnd(product.price)} / sản phẩm
                           </p>
                         )}
                       </div>
@@ -235,7 +236,7 @@ function Cart() {
                     Tạm tính ({totalItems} sản phẩm)
                   </span>
                   <span className="font-medium text-text-primary">
-                    {totalPrice.toLocaleString('vi-VN')}₫
+                    {formatCurrencyVnd(totalPrice)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -243,7 +244,7 @@ function Cart() {
                   <span className="font-medium text-text-primary">
                     {shippingFee === 0
                       ? 'Miễn phí'
-                      : `${shippingFee.toLocaleString('vi-VN')}₫`}
+                      : formatCurrencyVnd(shippingFee)}
                   </span>
                 </div>
                 {shippingFee > 0 && (
@@ -258,7 +259,7 @@ function Cart() {
                   Tổng cộng
                 </span>
                 <span className="font-display text-xl font-bold text-brand">
-                  {grandTotal.toLocaleString('vi-VN')}₫
+                  {formatCurrencyVnd(grandTotal)}
                 </span>
               </div>
 

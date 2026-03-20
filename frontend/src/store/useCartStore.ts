@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 import apiClient from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
+import { normalizeVndAmount } from '@/lib/currency';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { ApiResponse } from '@/api/types';
 import type { Product } from '@/types/product';
@@ -85,7 +86,7 @@ const fromServer = (item: ServerCartItem): CartItem => ({
     name: item.productName,
     image: item.productImage,
     brand: item.brand,
-    price: item.price,
+    price: normalizeVndAmount(item.price),
     selectedColor: item.color,
     selectedStorage: item.storage,
     // Fields not stored in cart snapshot — use safe defaults
@@ -104,9 +105,14 @@ export const useCartStore = create<CartState>()(
       isLoading: false,
 
       addItem: async (product) => {
+        const normalizedProduct = {
+          ...product,
+          price: normalizeVndAmount(product.price),
+        };
+
         // 1. Optimistic local update
         const prev = get().items;
-        const key = toCartItemKey(product);
+        const key = toCartItemKey(normalizedProduct);
         const existing = prev.find((i) => toCartItemKey(i.product) === key);
         if (existing) {
           if (existing.quantity >= MAX_QUANTITY) return;
@@ -118,7 +124,7 @@ export const useCartStore = create<CartState>()(
             ),
           });
         } else {
-          set({ items: [...prev, { product, quantity: 1 }] });
+          set({ items: [...prev, { product: normalizedProduct, quantity: 1 }] });
         }
 
         // 2. Sync to server if logged in
@@ -128,8 +134,8 @@ export const useCartStore = create<CartState>()(
             ENDPOINTS.CART.ITEMS,
             {
               productId: product.id,
-              color: product.selectedColor,
-              storage: product.selectedStorage,
+              color: normalizedProduct.selectedColor,
+              storage: normalizedProduct.selectedStorage,
               quantity: 1,
             },
           );
@@ -278,7 +284,10 @@ export const useCartStore = create<CartState>()(
 
       totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
       totalPrice: () =>
-        get().items.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
+        get().items.reduce(
+          (sum, i) => sum + normalizeVndAmount(i.product.price) * i.quantity,
+          0,
+        ),
     }),
     {
       name: 'nebula-cart',

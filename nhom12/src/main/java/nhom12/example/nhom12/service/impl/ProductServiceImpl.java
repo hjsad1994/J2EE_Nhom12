@@ -16,6 +16,7 @@ import nhom12.example.nhom12.repository.CategoryRepository;
 import nhom12.example.nhom12.repository.OrderRepository;
 import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.service.ProductService;
+import nhom12.example.nhom12.util.PriceNormalizer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,7 @@ public class ProductServiceImpl implements ProductService {
   @Transactional
   public ProductResponse createProduct(CreateProductRequest request) {
     Product product = productMapper.toEntity(request);
+    PriceNormalizer.normalizeProduct(product);
     syncSummaryFieldsFromVariants(product);
     return toResponse(productRepository.save(product));
   }
@@ -52,6 +54,7 @@ public class ProductServiceImpl implements ProductService {
         productRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+    PriceNormalizer.normalizeProduct(product);
     return toResponse(product);
   }
 
@@ -82,6 +85,7 @@ public class ProductServiceImpl implements ProductService {
     product.setSpecs(request.getSpecs());
     product.setStock(request.getStock() != null ? request.getStock() : product.getStock());
     product.setVariants(request.getVariants());
+    PriceNormalizer.normalizeProduct(product);
     syncSummaryFieldsFromVariants(product);
 
     return toResponse(productRepository.save(product));
@@ -106,6 +110,7 @@ public class ProductServiceImpl implements ProductService {
   }
 
   private ProductResponse toResponse(Product product) {
+    PriceNormalizer.normalizeProduct(product);
     Category category =
         product.getCategoryId() != null
             ? categoryRepository.findById(product.getCategoryId()).orElse(null)
@@ -119,6 +124,7 @@ public class ProductServiceImpl implements ProductService {
       return;
     }
 
+    variants.forEach(PriceNormalizer::normalizeVariant);
     ProductVariant primaryVariant = variants.get(0);
     product.setPrice(primaryVariant.getPrice());
     product.setStock(variants.stream().mapToInt(ProductVariant::getStock).sum());

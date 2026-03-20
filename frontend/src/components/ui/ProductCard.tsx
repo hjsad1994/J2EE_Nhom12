@@ -2,6 +2,7 @@ import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router';
 
+import { formatCurrencyVnd, normalizeVndAmount } from '@/lib/currency';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
@@ -29,7 +30,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
     ? {
         ...product,
         image: displayImage,
-        price: primaryVariant.price,
+        price: normalizeVndAmount(primaryVariant.price),
         stock: primaryVariant.stock,
         selectedColor: primaryVariant.color,
         selectedStorage: primaryVariant.storage,
@@ -127,7 +128,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           <div className="mt-3 flex items-end justify-between">
             <div>
               <span className="font-display text-lg font-bold text-brand">
-                {displayPrice.toLocaleString('vi-VN')}₫
+                {formatCurrencyVnd(displayPrice)}
               </span>
             </div>
             {!isAdmin && displayStock > 0 && (

@@ -14,6 +14,7 @@ import nhom12.example.nhom12.model.ProductVariant;
 import nhom12.example.nhom12.repository.CartRepository;
 import nhom12.example.nhom12.repository.ProductRepository;
 import nhom12.example.nhom12.service.CartService;
+import nhom12.example.nhom12.util.PriceNormalizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ public class CartServiceImpl implements CartService {
             .findById(request.getProductId())
             .orElseThrow(
                 () -> new ResourceNotFoundException("Product", "id", request.getProductId()));
+    PriceNormalizer.normalizeProduct(product);
     ProductVariant selectedVariant = findVariant(product, request.getColor(), request.getStorage());
 
     Cart cart =
@@ -131,6 +133,7 @@ public class CartServiceImpl implements CartService {
     for (CartItemRequest localItem : request.getItems()) {
       Product product = productRepository.findById(localItem.getProductId()).orElse(null);
       if (product == null) continue; // skip products that no longer exist
+      PriceNormalizer.normalizeProduct(product);
 
       Optional<CartItem> serverItem =
           cart.getItems().stream()
@@ -185,6 +188,7 @@ public class CartServiceImpl implements CartService {
   }
 
   private CartResponse toResponse(Cart cart) {
+    cart.getItems().forEach(item -> item.setPrice(PriceNormalizer.normalize(item.getPrice())));
     return CartResponse.builder()
         .id(cart.getId())
         .userId(cart.getUserId())
