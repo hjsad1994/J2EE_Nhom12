@@ -24,6 +24,7 @@ import nhom12.example.nhom12.repository.VoucherRepository;
 import nhom12.example.nhom12.service.VoucherService;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -218,10 +219,6 @@ public class VoucherServiceImpl implements VoucherService {
     }
   }
 
-  private boolean isVoucherUsable(Voucher voucher, double baseAmount) {
-    return getVoucherUnusableReason(voucher, baseAmount) == null;
-  }
-
   private AppliedVoucher applyVoucher(Voucher voucher, double baseAmount) {
     if (voucher == null || baseAmount <= 0) {
       return null;
@@ -275,15 +272,20 @@ public class VoucherServiceImpl implements VoucherService {
   }
 
   private void reserveVoucherUsage(String voucherId, String voucherCode) {
-    Criteria availableCriteria =
-        new Criteria()
-            .orOperator(
-                Criteria.where("usageLimit").is(null),
-                Criteria.expr(
-                    new Document("$gt", Arrays.asList("$usageLimit", "$usedCount"))));
-
     Query query =
-        new Query(new Criteria().andOperator(Criteria.where("_id").is(voucherId), availableCriteria));
+        new BasicQuery(
+            new Document(
+                "$and",
+                Arrays.asList(
+                    new Document("_id", voucherId),
+                    new Document(
+                        "$or",
+                        Arrays.asList(
+                            new Document("usageLimit", null),
+                            new Document(
+                                "$expr",
+                                new Document(
+                                    "$gt", Arrays.asList("$usageLimit", "$usedCount"))))))));
     long modified =
         mongoTemplate
             .updateFirst(query, new Update().inc("usedCount", 1), Voucher.class)
