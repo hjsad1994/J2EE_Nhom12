@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import apiClient from '@/api/client';
@@ -41,6 +41,7 @@ function Checkout() {
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
   );
+  const voucherValidationRequestIdRef = useRef(0);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -91,22 +92,6 @@ function Checkout() {
     void loadAvailableVouchers();
   }, [items, totalPrice]);
 
-  if (items.length === 0) {
-    return (
-      <section className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
-        <h2 className="font-display text-2xl font-bold text-text-primary">
-          Giỏ hàng trống
-        </h2>
-        <p className="mt-2 text-text-secondary">
-          Vui lòng thêm sản phẩm trước khi thanh toán.
-        </p>
-        <Link to="/products" className="btn-primary mt-6 no-underline">
-          Tiếp tục mua sắm
-        </Link>
-      </section>
-    );
-  }
-
   const orderItems = items.map(({ product, quantity }) => ({
     productId: product.id,
     productName: product.name,
@@ -142,24 +127,41 @@ function Checkout() {
     productVoucher: null,
     shippingVoucher: null,
   };
+  const discountedSubtotal = Math.max(
+    pricing.subtotal - pricing.productDiscount,
+    0,
+  );
 
   const resetVoucherPreview = () => {
     setVoucherSummary(null);
     setVoucherMessage('');
   };
 
-  const applyVouchers = async () => {
-    const normalizedProductCode = productVoucherCode.trim();
-    const normalizedShippingCode = shippingVoucherCode.trim();
+  const validateVouchers = useCallback(async (
+    nextProductCode: string,
+    nextShippingCode: string,
+    options?: {
+      showSuccess?: boolean;
+      showError?: boolean;
+    },
+  ) => {
+    const normalizedProductCode = nextProductCode.trim();
+    const normalizedShippingCode = nextShippingCode.trim();
+    const requestId = ++voucherValidationRequestIdRef.current;
 
     if (!normalizedProductCode && !normalizedShippingCode) {
       resetVoucherPreview();
+      setError('');
       return;
     }
 
     setVoucherLoading(true);
-    setError('');
-    setVoucherMessage('');
+    if (options?.showError) {
+      setError('');
+    }
+    if (options?.showSuccess) {
+      setVoucherMessage('');
+    }
 
     try {
       const res = await apiClient.post<ApiResponse<VoucherValidation>>(
@@ -170,20 +172,74 @@ function Checkout() {
           shippingVoucherCode: normalizedShippingCode || undefined,
         },
       );
+      if (requestId !== voucherValidationRequestIdRef.current) {
+        return;
+      }
       setVoucherSummary(res.data.data);
-      setVoucherMessage('Áp dụng voucher thành công.');
+      if (options?.showSuccess) {
+        setVoucherMessage('Áp dụng voucher thành công.');
+      }
     } catch (err: unknown) {
+      if (requestId !== voucherValidationRequestIdRef.current) {
+        return;
+      }
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setVoucherSummary(null);
       setVoucherMessage('');
-      setError(
-        axiosErr.response?.data?.message ??
-          'Không thể áp dụng voucher. Vui lòng thử lại.',
-      );
+      if (options?.showError) {
+        setError(
+          axiosErr.response?.data?.message ??
+            'Không thể áp dụng voucher. Vui lòng thử lại.',
+        );
+      }
     } finally {
-      setVoucherLoading(false);
+      if (requestId === voucherValidationRequestIdRef.current) {
+        setVoucherLoading(false);
+      }
     }
+  }, [orderItems]);
+
+  const applyVouchers = async () => {
+    await validateVouchers(productVoucherCode, shippingVoucherCode, {
+      showSuccess: true,
+      showError: true,
+    });
   };
+
+  useEffect(() => {
+    const normalizedProductCode = productVoucherCode.trim();
+    const normalizedShippingCode = shippingVoucherCode.trim();
+
+    if (!normalizedProductCode && !normalizedShippingCode) {
+      voucherValidationRequestIdRef.current += 1;
+      resetVoucherPreview();
+      setError('');
+      setVoucherLoading(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void validateVouchers(productVoucherCode, shippingVoucherCode);
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [items, productVoucherCode, shippingVoucherCode, validateVouchers]);
+
+  if (items.length === 0) {
+    return (
+      <section className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
+        <h2 className="font-display text-2xl font-bold text-text-primary">
+          Giỏ hàng trống
+        </h2>
+        <p className="mt-2 text-text-secondary">
+          Vui lòng thêm sản phẩm trước khi thanh toán.
+        </p>
+        <Link to="/products" className="btn-primary mt-6 no-underline">
+          Tiếp tục mua sắm
+        </Link>
+      </section>
+    );
+  }
 
   const clearVoucher = (type: VoucherInputType) => {
     if (type === 'product') {
@@ -704,6 +760,14 @@ function Checkout() {
                       : ''}
                   </span>
                   <span>-{formatCurrencyVnd(pricing.productDiscount)}</span>
+                </div>
+              )}
+              {pricing.productDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-secondary">Tiền hàng sau giảm</span>
+                  <span className="font-medium text-text-primary">
+                    {formatCurrencyVnd(discountedSubtotal)}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between text-sm">

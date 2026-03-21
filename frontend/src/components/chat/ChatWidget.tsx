@@ -35,11 +35,16 @@ export default function ChatWidget() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const clientRef = useRef<Client | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const openRef = useRef(open);
 
   const unreadCount = useMemo(
     () => (open ? 0 : conversation?.unreadCountForUser ?? 0),
     [conversation?.unreadCountForUser, open],
   );
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -64,7 +69,7 @@ export default function ChatWidget() {
                 )
               : [...prev, nextMessage],
           );
-          if (!open) {
+          if (!openRef.current) {
             addToast('info', 'Bạn có tin nhắn mới từ hỗ trợ');
           }
         });
@@ -72,7 +77,6 @@ export default function ChatWidget() {
         client.subscribe('/user/queue/chat/conversation', (frame) => {
           const nextConversation = JSON.parse(frame.body) as ChatConversation;
           setConversation(nextConversation);
-          setUserUnreadCount(nextConversation.unreadCountForUser ?? 0);
         });
       },
     });
@@ -84,7 +88,7 @@ export default function ChatWidget() {
       client.deactivate();
       clientRef.current = null;
     };
-  }, [addToast, isAdmin, isLoggedIn, open, setUserUnreadCount, token, user]);
+  }, [addToast, isAdmin, isLoggedIn, token, user]);
 
   useEffect(() => {
     if (!open || !isLoggedIn || isAdmin) return;
