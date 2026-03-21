@@ -138,8 +138,7 @@ public class OrderServiceImpl implements OrderService {
       Order saved = orderRepository.save(order);
       voucherService.markOrderVoucherUsage(saved);
       if (!"MOMO".equalsIgnoreCase(saved.getPaymentMethod())) {
-        emailService.sendOrderConfirmationEmail(
-            saved.getEmail(), saved.getCustomerName(), saved.getOrderCode(), saved.getTotal());
+        emailService.sendOrderConfirmationEmail(saved);
       }
       return toResponse(saved);
     } catch (DuplicateKeyException e) {

@@ -1,29 +1,53 @@
 package nhom12.example.nhom12.service;
 
+import java.text.NumberFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nhom12.example.nhom12.model.Order;
+import nhom12.example.nhom12.model.OrderItem;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EmailService {
 
+  private static final Locale VIETNAM_LOCALE = Locale.forLanguageTag("vi-VN");
+
   private final JavaMailSender mailSender;
+  private final RestTemplate restTemplate;
 
   @Value("${app.frontend-url}")
   private String frontendUrl;
 
+  @Value("${app.email.provider:smtp}")
+  private String emailProvider;
+
+  @Value("${app.email.from:${MAIL_USERNAME:no-reply@localhost}}")
+  private String fromEmail;
+
+  @Value("${resend.api-key:}")
+  private String resendApiKey;
+
+  @Value("${resend.api-url:https://api.resend.com/emails}")
+  private String resendApiUrl;
+
   public void sendPasswordResetEmail(String to, String token) {
     String resetLink = frontendUrl + "/reset-password?token=" + token;
-    SimpleMailMessage message = new SimpleMailMessage();
-    message.setTo(to);
-    message.setSubject("Đặt lại mật khẩu - NEBULA Store");
-    message.setText(
+    sendEmail(
+        to,
+        "Đặt lại mật khẩu - NEBULA Store",
         "Xin chào,\n\n"
             + "Bạn đã yêu cầu đặt lại mật khẩu.\n\n"
             + "Nhấn vào link sau để đặt lại: "
@@ -32,39 +56,212 @@ public class EmailService {
             + "Link có hiệu lực trong 15 phút.\n\n"
             + "Nếu bạn không yêu cầu, hãy bỏ qua email này.\n\n"
             + "NEBULA Store");
-    mailSender.send(message);
+  }
+
+  @Async
+  public void sendPasswordChangedEmail(String to, String username) {
+    try {
+      sendEmail(
+          to,
+          "Mật khẩu đã được thay đổi - NEBULA Store",
+          "Xin chào "
+              + username
+              + ",\n\n"
+              + "Mật khẩu tài khoản của bạn vừa được thay đổi thành công.\n\n"
+              + "Nếu đây không phải là bạn, hãy đặt lại mật khẩu ngay và liên hệ quản trị viên.\n\n"
+              + "NEBULA Store");
+      log.info("[Email] Password changed email sent to {}", to);
+    } catch (Exception e) {
+      log.error("[Email] Failed to send password changed email to {}: {}", to, e.getMessage());
+    }
   }
 
   /**
-   * Sends an order confirmation email asynchronously (@Async). The caller (OrderServiceImpl) does
-   * NOT wait for this to complete — the HTTP response is returned immediately after the order is
-   * saved, and this email is processed in the background by Spring's task executor.
+   * Sends an order confirmation email asynchronously (@Async). The caller does not wait for this
+   * to complete.
    */
+  @Async
+  public void sendOrderConfirmationEmail(Order order) {
+    try {
+      sendEmail(
+          order.getEmail(),
+          "Đặt hàng thành công - NEBULA Store",
+          buildOrderConfirmationBody(order));
+      log.info(
+          "[Email] Order confirmation sent to {} for orderCode={}",
+          order.getEmail(),
+          order.getOrderCode());
+    } catch (Exception e) {
+      log.error(
+          "[Email] Failed to send order confirmation to {}: {}",
+          order.getEmail(),
+          e.getMessage());
+    }
+  }
+
   @Async
   public void sendOrderConfirmationEmail(
       String to, String customerName, String orderCode, double total) {
     try {
-      SimpleMailMessage message = new SimpleMailMessage();
-      message.setTo(to);
-      message.setSubject("Đặt hàng thành công - NEBULA Store");
-      message.setText(
+      sendEmail(
+          to,
+          "Đặt hàng thành công - NEBULA Store",
           "Xin chào "
               + customerName
               + ",\n\n"
-              + "Đơn hàng của bạn đã được đặt thành công!\n\n"
+              + "Đơn hàng của bạn đã được đặt thành công.\n\n"
               + "Mã đơn hàng: "
-              + orderCode.substring(0, Math.min(8, orderCode.length())).toUpperCase()
+              + shortOrderCode(orderCode)
               + "\n"
-              + "Tổng tiền: "
-              + String.format("%,.0f", total)
-              + " VNĐ\n\n"
-              + "Chúng tôi sẽ xử lý đơn hàng của bạn trong thời gian sớm nhất.\n\n"
+              + "Tổng cộng: "
+              + formatCurrency(total)
+              + "\n\n"
               + "NEBULA Store");
-      mailSender.send(message);
       log.info("[Email] Order confirmation sent to {} for orderCode={}", to, orderCode);
     } catch (Exception e) {
-      // Email failure must NOT affect the order transaction — log and continue
       log.error("[Email] Failed to send order confirmation to {}: {}", to, e.getMessage());
     }
+  }
+
+  private String buildOrderConfirmationBody(Order order) {
+    StringBuilder body =
+        new StringBuilder()
+            .append("Xin chào ")
+            .append(order.getCustomerName())
+            .append(",\n\n")
+            .append("Đơn hàng của bạn đã được đặt thành công.\n\n")
+            .append("Mã đơn hàng: ")
+            .append(shortOrderCode(order.getOrderCode()))
+            .append("\n")
+            .append("Phương thức thanh toán: ")
+            .append(order.getPaymentMethod())
+            .append("\n")
+            .append("Trạng thái thanh toán: ")
+            .append(order.getPaymentStatus())
+            .append("\n\n")
+            .append("Sản phẩm đã đặt:\n");
+
+    for (OrderItem item : order.getItems()) {
+      body.append("- ")
+          .append(item.getProductName());
+      if ((item.getColor() != null && !item.getColor().isBlank())
+          || (item.getStorage() != null && !item.getStorage().isBlank())) {
+        body.append(" (")
+            .append(
+                String.join(
+                    " · ",
+                    java.util.stream.Stream.of(item.getColor(), item.getStorage())
+                        .filter(value -> value != null && !value.isBlank())
+                        .toList()))
+            .append(")");
+      }
+      body.append(": ")
+          .append(item.getQuantity())
+          .append(" x ")
+          .append(formatCurrency(item.getPrice()))
+          .append(" = ")
+          .append(formatCurrency(item.getPrice() * item.getQuantity()))
+          .append("\n");
+    }
+
+    body.append("\n")
+        .append("Tạm tính: ")
+        .append(formatCurrency(order.getSubtotal()))
+        .append("\n");
+
+    if (order.getProductDiscount() > 0) {
+      body.append("Giảm sản phẩm");
+      if (order.getProductVoucher() != null) {
+        body.append(" (").append(order.getProductVoucher().getCode()).append(")");
+      }
+      body.append(": -").append(formatCurrency(order.getProductDiscount())).append("\n");
+    }
+
+    body.append("Phí vận chuyển: ")
+        .append(formatCurrency(order.getOriginalShippingFee()))
+        .append("\n");
+
+    if (order.getShippingDiscount() > 0) {
+      body.append("Giảm phí vận chuyển");
+      if (order.getShippingVoucher() != null) {
+        body.append(" (").append(order.getShippingVoucher().getCode()).append(")");
+      }
+      body.append(": -").append(formatCurrency(order.getShippingDiscount())).append("\n");
+    }
+
+    body.append("Tổng cộng: ")
+        .append(formatCurrency(order.getTotal()))
+        .append("\n\n")
+        .append("Thông tin nhận hàng:\n")
+        .append("- Người nhận: ")
+        .append(order.getCustomerName())
+        .append("\n")
+        .append("- Điện thoại: ")
+        .append(order.getPhone())
+        .append("\n")
+        .append("- Địa chỉ: ")
+        .append(order.getAddress())
+        .append(", ")
+        .append(order.getWard())
+        .append(", ")
+        .append(order.getDistrict())
+        .append(", ")
+        .append(order.getCity())
+        .append("\n");
+
+    if (order.getNote() != null && !order.getNote().isBlank()) {
+      body.append("- Ghi chú: ").append(order.getNote()).append("\n");
+    }
+
+    body.append("\nChúng tôi sẽ xử lý đơn hàng của bạn trong thời gian sớm nhất.\n\nNEBULA Store");
+    return body.toString();
+  }
+
+  private String shortOrderCode(String orderCode) {
+    return orderCode.substring(0, Math.min(8, orderCode.length())).toUpperCase();
+  }
+
+  private String formatCurrency(double amount) {
+    return NumberFormat.getNumberInstance(VIETNAM_LOCALE).format(Math.round(amount)) + " VNĐ";
+  }
+
+  private void sendEmail(String to, String subject, String text) {
+    if ("resend".equalsIgnoreCase(emailProvider)) {
+      sendViaResend(to, subject, text);
+      return;
+    }
+
+    sendViaSmtp(to, subject, text);
+  }
+
+  private void sendViaSmtp(String to, String subject, String text) {
+    SimpleMailMessage message = new SimpleMailMessage();
+    message.setFrom(fromEmail);
+    message.setTo(to);
+    message.setSubject(subject);
+    message.setText(text);
+    mailSender.send(message);
+  }
+
+  private void sendViaResend(String to, String subject, String text) {
+    if (resendApiKey == null || resendApiKey.isBlank()) {
+      throw new IllegalStateException("RESEND_API_KEY is missing");
+    }
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setBearerAuth(resendApiKey);
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    Map<String, Object> payload =
+        Map.of(
+            "from", fromEmail,
+            "to", List.of(to),
+            "subject", subject,
+            "text", text);
+
+    restTemplate.postForEntity(
+        resendApiUrl,
+        new HttpEntity<>(payload, headers),
+        Map.class);
   }
 }

@@ -3,9 +3,7 @@ package nhom12.example.nhom12.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -136,7 +134,7 @@ class OrderServiceImplTest {
                 o.setId(ORDER_ID);
                 return o;
               });
-      doNothing().when(emailService).sendOrderConfirmationEmail(any(), any(), any(), anyDouble());
+      doNothing().when(emailService).sendOrderConfirmationEmail(any(Order.class));
 
       OrderResponse result = orderService.createOrder(USER_ID, orderRequest);
 
@@ -167,7 +165,7 @@ class OrderServiceImplTest {
                 o.setId(ORDER_ID);
                 return o;
               });
-      doNothing().when(emailService).sendOrderConfirmationEmail(any(), any(), any(), anyDouble());
+      doNothing().when(emailService).sendOrderConfirmationEmail(any(Order.class));
 
       OrderResponse result = orderService.createOrder(USER_ID, orderRequest);
 
@@ -198,7 +196,7 @@ class OrderServiceImplTest {
                 o.setId(ORDER_ID);
                 return o;
               });
-      doNothing().when(emailService).sendOrderConfirmationEmail(any(), any(), any(), anyDouble());
+      doNothing().when(emailService).sendOrderConfirmationEmail(any(Order.class));
 
       OrderResponse result = orderService.createOrder(USER_ID, orderRequest);
 
@@ -218,7 +216,7 @@ class OrderServiceImplTest {
                 o.setId(ORDER_ID);
                 return o;
               });
-      doNothing().when(emailService).sendOrderConfirmationEmail(any(), any(), any(), anyDouble());
+      doNothing().when(emailService).sendOrderConfirmationEmail(any(Order.class));
 
       OrderResponse result = orderService.createOrder(USER_ID, orderRequest);
 
@@ -257,8 +255,7 @@ class OrderServiceImplTest {
 
       orderService.createOrder(USER_ID, orderRequest);
 
-      verify(emailService)
-          .sendOrderConfirmationEmail(eq("customer@example.com"), eq("Nguyen Van A"), any(), anyDouble());
+      verify(emailService).sendOrderConfirmationEmail(any(Order.class));
     }
 
     @Test
@@ -277,7 +274,7 @@ class OrderServiceImplTest {
 
       orderService.createOrder(USER_ID, orderRequest);
 
-      verify(emailService, never()).sendOrderConfirmationEmail(any(), any(), any(), anyDouble());
+      verify(emailService, never()).sendOrderConfirmationEmail(any(Order.class));
     }
 
     @Test

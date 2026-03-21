@@ -13,6 +13,7 @@ import nhom12.example.nhom12.mapper.UserMapper;
 import nhom12.example.nhom12.model.User;
 import nhom12.example.nhom12.model.enums.Role;
 import nhom12.example.nhom12.repository.UserRepository;
+import nhom12.example.nhom12.service.EmailService;
 import nhom12.example.nhom12.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,7 @@ public class UserServiceImpl implements UserService {
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
   private final SimpMessagingTemplate messagingTemplate;
+  private final EmailService emailService;
 
   @Override
   public UserResponse createUser(CreateUserRequest request) {
@@ -81,6 +83,7 @@ public class UserServiceImpl implements UserService {
 
     user.setPassword(passwordEncoder.encode(request.getNewPassword()));
     userRepository.save(user);
+    emailService.sendPasswordChangedEmail(user.getEmail(), user.getUsername());
   }
 
   @Override
@@ -98,6 +101,7 @@ public class UserServiceImpl implements UserService {
     user.setPassword(passwordEncoder.encode(request.getNewPassword()));
     user.setHasPassword(true);
     userRepository.save(user);
+    emailService.sendPasswordChangedEmail(user.getEmail(), user.getUsername());
   }
 
   @Override
@@ -176,5 +180,6 @@ public class UserServiceImpl implements UserService {
     user.setPassword(passwordEncoder.encode(newPassword));
     user.setHasPassword(true);
     userRepository.save(user);
+    emailService.sendPasswordChangedEmail(user.getEmail(), user.getUsername());
   }
 }

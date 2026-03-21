@@ -112,11 +112,21 @@ Ban phai thay cac gia tri nay:
 - `CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name`
 - `CLOUDINARY_API_KEY=your_cloudinary_api_key`
 - `CLOUDINARY_API_SECRET=your_cloudinary_api_secret`
-- `MAIL_USERNAME=your_email@gmail.com`
-- `MAIL_PASSWORD=your_app_password`
+- `APP_EMAIL_PROVIDER=resend`
+- `APP_EMAIL_FROM=onboarding@resend.dev`
+- `RESEND_API_KEY=re_xxxxxxxxx`
 - `MOMO_PARTNER_CODE=your_momo_partner_code`
 - `MOMO_ACCESS_KEY=your_momo_access_key`
 - `MOMO_SECRET_KEY=your_momo_secret_key`
+
+Neu ban muon fallback SMTP thay vi Resend thi moi can:
+
+```env
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
+```
 
 Neu chua dung ABSA service tren VPS, tam thoi giu:
 

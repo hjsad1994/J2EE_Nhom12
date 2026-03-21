@@ -212,8 +212,7 @@ public class MoMoServiceImpl implements MoMoService {
     }
 
     if (resultCode == 0) {
-      emailService.sendOrderConfirmationEmail(
-          order.getEmail(), order.getCustomerName(), order.getOrderCode(), order.getTotal());
+      emailService.sendOrderConfirmationEmail(order);
       log.info("[MoMo] Payment successful for orderId={}, transId={}", orderId, transId);
     } else {
       // Restore stock atomically with order cancellation
