@@ -43,9 +43,11 @@ public class EmailService {
   @Value("${resend.api-url:https://api.resend.com/emails}")
   private String resendApiUrl;
 
+  @Async
   public void sendPasswordResetEmail(String to, String token) {
-    String resetLink = frontendUrl + "/reset-password?token=" + token;
-    sendEmail(
+    try {
+      String resetLink = frontendUrl + "/reset-password?token=" + token;
+      sendEmail(
         to,
         "Đặt lại mật khẩu - NEBULA Store",
         "Xin chào,\n\n"
@@ -56,6 +58,10 @@ public class EmailService {
             + "Link có hiệu lực trong 15 phút.\n\n"
             + "Nếu bạn không yêu cầu, hãy bỏ qua email này.\n\n"
             + "NEBULA Store");
+      log.info("[Email] Password reset email sent to {}", to);
+    } catch (Exception e) {
+      log.error("[Email] Failed to send password reset email to {}: {}", to, e.getMessage());
+    }
   }
 
   @Async
