@@ -1,10 +1,42 @@
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+
+import apiClient from '@/api/client';
+import { ENDPOINTS } from '@/api/endpoints';
+import type { ApiResponse, PaginatedResponse } from '@/api/types';
 import ProductCard from '@/components/ui/ProductCard';
-import { featuredProducts } from '@/data/products';
+import type { Product } from '@/types/product';
 
 export default function FeaturedProducts() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadFeaturedProducts = async () => {
+      setLoading(true);
+      try {
+        const res = await apiClient.get<ApiResponse<PaginatedResponse<Product>>>(
+          ENDPOINTS.PRODUCTS.BASE,
+          {
+            params: {
+              page: 0,
+              size: 8,
+            },
+          },
+        );
+        setProducts(res.data.data.content);
+      } catch {
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadFeaturedProducts();
+  }, []);
+
   return (
     <section className="relative py-24">
       <div className="mx-auto max-w-7xl px-6">
@@ -42,10 +74,23 @@ export default function FeaturedProducts() {
 
         {/* Product grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {featuredProducts.slice(0, 8).map((product, index) => (
-            <ProductCard key={product.id} product={product} index={index} />
-          ))}
+          {loading
+            ? Array.from({ length: 8 }).map((_, index) => (
+                <div
+                  key={`featured-skeleton-${index}`}
+                  className="h-[420px] animate-pulse rounded-2xl border border-border bg-surface-alt"
+                />
+              ))
+            : products.map((product, index) => (
+                <ProductCard key={product.id} product={product} index={index} />
+              ))}
         </div>
+
+        {!loading && products.length === 0 && (
+          <div className="mt-8 rounded-2xl border border-border bg-surface-alt px-6 py-10 text-center text-text-secondary">
+            Chưa có sản phẩm nổi bật để hiển thị.
+          </div>
+        )}
 
         {/* Mobile "View all" */}
         <div className="mt-8 flex justify-center md:hidden">
