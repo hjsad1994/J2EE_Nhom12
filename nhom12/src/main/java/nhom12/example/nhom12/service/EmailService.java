@@ -48,16 +48,16 @@ public class EmailService {
     try {
       String resetLink = frontendUrl + "/reset-password?token=" + token;
       sendEmail(
-        to,
-        "Đặt lại mật khẩu - NEBULA Store",
-        "Xin chào,\n\n"
-            + "Bạn đã yêu cầu đặt lại mật khẩu.\n\n"
-            + "Nhấn vào link sau để đặt lại: "
-            + resetLink
-            + "\n\n"
-            + "Link có hiệu lực trong 15 phút.\n\n"
-            + "Nếu bạn không yêu cầu, hãy bỏ qua email này.\n\n"
-            + "NEBULA Store");
+          to,
+          "VeritaShop | Yeu cau dat lai mat khau",
+          "Xin chao,\n\n"
+              + "Ban da yeu cau dat lai mat khau.\n\n"
+              + "Nhan vao link sau de dat lai: "
+              + resetLink
+              + "\n\n"
+              + "Link co hieu luc trong 15 phut.\n\n"
+              + "Neu ban khong yeu cau, hay bo qua email nay.\n\n"
+              + "VeritaShop");
       log.info("[Email] Password reset email sent to {}", to);
     } catch (Exception e) {
       log.error("[Email] Failed to send password reset email to {}: {}", to, e.getMessage());
@@ -69,29 +69,25 @@ public class EmailService {
     try {
       sendEmail(
           to,
-          "Mật khẩu đã được thay đổi - NEBULA Store",
-          "Xin chào "
+          "VeritaShop | Mat khau cua ban da duoc thay doi",
+          "Xin chao "
               + username
               + ",\n\n"
-              + "Mật khẩu tài khoản của bạn vừa được thay đổi thành công.\n\n"
-              + "Nếu đây không phải là bạn, hãy đặt lại mật khẩu ngay và liên hệ quản trị viên.\n\n"
-              + "NEBULA Store");
+              + "Mat khau tai khoan cua ban vua duoc thay doi thanh cong.\n\n"
+              + "Neu day khong phai la ban, hay dat lai mat khau ngay va lien he quan tri vien.\n\n"
+              + "VeritaShop");
       log.info("[Email] Password changed email sent to {}", to);
     } catch (Exception e) {
       log.error("[Email] Failed to send password changed email to {}: {}", to, e.getMessage());
     }
   }
 
-  /**
-   * Sends an order confirmation email asynchronously (@Async). The caller does not wait for this
-   * to complete.
-   */
   @Async
   public void sendOrderConfirmationEmail(Order order) {
     try {
       sendEmail(
           order.getEmail(),
-          "Đặt hàng thành công - NEBULA Store",
+          "VeritaShop | Xac nhan don hang #" + shortOrderCode(order.getOrderCode()),
           buildOrderConfirmationBody(order));
       log.info(
           "[Email] Order confirmation sent to {} for orderCode={}",
@@ -111,18 +107,18 @@ public class EmailService {
     try {
       sendEmail(
           to,
-          "Đặt hàng thành công - NEBULA Store",
-          "Xin chào "
+          "VeritaShop | Xac nhan don hang #" + shortOrderCode(orderCode),
+          "Xin chao "
               + customerName
               + ",\n\n"
-              + "Đơn hàng của bạn đã được đặt thành công.\n\n"
-              + "Mã đơn hàng: "
+              + "Don hang cua ban da duoc dat thanh cong.\n\n"
+              + "Ma don hang: "
               + shortOrderCode(orderCode)
               + "\n"
-              + "Tổng cộng: "
+              + "Tong cong: "
               + formatCurrency(total)
               + "\n\n"
-              + "NEBULA Store");
+              + "VeritaShop");
       log.info("[Email] Order confirmation sent to {} for orderCode={}", to, orderCode);
     } catch (Exception e) {
       log.error("[Email] Failed to send order confirmation to {}: {}", to, e.getMessage());
@@ -132,24 +128,23 @@ public class EmailService {
   private String buildOrderConfirmationBody(Order order) {
     StringBuilder body =
         new StringBuilder()
-            .append("Xin chào ")
+            .append("Xin chao ")
             .append(order.getCustomerName())
             .append(",\n\n")
-            .append("Đơn hàng của bạn đã được đặt thành công.\n\n")
-            .append("Mã đơn hàng: ")
+            .append("Don hang cua ban da duoc dat thanh cong.\n\n")
+            .append("Ma don hang: ")
             .append(shortOrderCode(order.getOrderCode()))
             .append("\n")
-            .append("Phương thức thanh toán: ")
+            .append("Phuong thuc thanh toan: ")
             .append(order.getPaymentMethod())
             .append("\n")
-            .append("Trạng thái thanh toán: ")
+            .append("Trang thai thanh toan: ")
             .append(order.getPaymentStatus())
             .append("\n\n")
-            .append("Sản phẩm đã đặt:\n");
+            .append("San pham da dat:\n");
 
     for (OrderItem item : order.getItems()) {
-      body.append("- ")
-          .append(item.getProductName());
+      body.append("- ").append(item.getProductName());
       if ((item.getColor() != null && !item.getColor().isBlank())
           || (item.getStorage() != null && !item.getStorage().isBlank())) {
         body.append(" (")
@@ -170,42 +165,39 @@ public class EmailService {
           .append("\n");
     }
 
-    body.append("\n")
-        .append("Tạm tính: ")
-        .append(formatCurrency(order.getSubtotal()))
-        .append("\n");
+    body.append("\n").append("Tam tinh: ").append(formatCurrency(order.getSubtotal())).append("\n");
 
     if (order.getProductDiscount() > 0) {
-      body.append("Giảm sản phẩm");
+      body.append("Giam san pham");
       if (order.getProductVoucher() != null) {
         body.append(" (").append(order.getProductVoucher().getCode()).append(")");
       }
       body.append(": -").append(formatCurrency(order.getProductDiscount())).append("\n");
     }
 
-    body.append("Phí vận chuyển: ")
+    body.append("Phi van chuyen: ")
         .append(formatCurrency(order.getOriginalShippingFee()))
         .append("\n");
 
     if (order.getShippingDiscount() > 0) {
-      body.append("Giảm phí vận chuyển");
+      body.append("Giam phi van chuyen");
       if (order.getShippingVoucher() != null) {
         body.append(" (").append(order.getShippingVoucher().getCode()).append(")");
       }
       body.append(": -").append(formatCurrency(order.getShippingDiscount())).append("\n");
     }
 
-    body.append("Tổng cộng: ")
+    body.append("Tong cong: ")
         .append(formatCurrency(order.getTotal()))
         .append("\n\n")
-        .append("Thông tin nhận hàng:\n")
-        .append("- Người nhận: ")
+        .append("Thong tin nhan hang:\n")
+        .append("- Nguoi nhan: ")
         .append(order.getCustomerName())
         .append("\n")
-        .append("- Điện thoại: ")
+        .append("- Dien thoai: ")
         .append(order.getPhone())
         .append("\n")
-        .append("- Địa chỉ: ")
+        .append("- Dia chi: ")
         .append(order.getAddress())
         .append(", ")
         .append(order.getWard())
@@ -216,10 +208,10 @@ public class EmailService {
         .append("\n");
 
     if (order.getNote() != null && !order.getNote().isBlank()) {
-      body.append("- Ghi chú: ").append(order.getNote()).append("\n");
+      body.append("- Ghi chu: ").append(order.getNote()).append("\n");
     }
 
-    body.append("\nChúng tôi sẽ xử lý đơn hàng của bạn trong thời gian sớm nhất.\n\nNEBULA Store");
+    body.append("\nChung toi se xu ly don hang cua ban trong thoi gian som nhat.\n\nVeritaShop");
     return body.toString();
   }
 
@@ -228,7 +220,7 @@ public class EmailService {
   }
 
   private String formatCurrency(double amount) {
-    return NumberFormat.getNumberInstance(VIETNAM_LOCALE).format(Math.round(amount)) + " VNĐ";
+    return NumberFormat.getNumberInstance(VIETNAM_LOCALE).format(Math.round(amount)) + " VND";
   }
 
   private void sendEmail(String to, String subject, String text) {
@@ -265,9 +257,6 @@ public class EmailService {
             "subject", subject,
             "text", text);
 
-    restTemplate.postForEntity(
-        resendApiUrl,
-        new HttpEntity<>(payload, headers),
-        Map.class);
+    restTemplate.postForEntity(resendApiUrl, new HttpEntity<>(payload, headers), Map.class);
   }
 }
